@@ -1,0 +1,36 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}edite Batches{% endblock %}
+
+{% block content %}
+    <h1 class="text-center">Available Batches</h1>
+    
+    <a href="{% url 'create_batch' %}" class="btn btn-success mb-4">Create Batch</a>
+
+    <h3>All Batches</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Course</th>
+                <th>Year</th>
+                <th>Part</th>
+                <th>Status</th>
+                
+            </tr>
+        </thead>
+        <tbody>
+            {% for batch in batches %}
+            <tr>
+                <td>{{ batch.course }}</td>
+                <td>{{ batch.year }}</td>
+                <td>{{ batch.get_part_display }}</td>
+                <td>{{ batch.status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No batches found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}
