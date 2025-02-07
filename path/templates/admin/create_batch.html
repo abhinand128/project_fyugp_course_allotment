@@ -1,0 +1,78 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Create Batch{% endblock %}
+
+{% block content %}
+<h1 class="text-center">Create Batch</h1>
+
+<!-- Filter Form -->
+<form method="get" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            {{ filter_form.course_type.label_tag }}
+            {{ filter_form.course_type }}
+        </div>
+        <div class="col-md-4">
+            {{ filter_form.department.label_tag }}
+            {{ filter_form.department }}
+        </div>
+        <div class="col-md-4">
+            {{ filter_form.semester.label_tag }}
+            {{ filter_form.semester }}
+        </div>
+    </div>
+    <div class="text-center mt-3">
+        <button type="submit" class="btn btn-primary">View Courses</button>
+    </div>
+</form>
+
+<!-- Display Courses -->
+{% if courses %}
+    <h3>Available Courses</h3>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Course Code</th>
+                <th>Course Name</th>
+                <th>Type</th>
+                <th>Department</th>
+                <th>Semester</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in courses %}
+                <tr>
+                    <td>{{ course.course_code }}</td>
+                    <td>{{ course.course_name }}</td>
+                    <td>{{ course.course_type }}</td>
+                    <td>{{ course.department }}</td>
+                    <td>{{ course.semester }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="text-center">No courses found for the given selection.</p>
+{% endif %}
+
+<!-- Batch Creation Form -->
+<form method="post">
+    {% csrf_token %}
+    <h3>Batch Details</h3>
+    <div class="row">
+        <div class="col-md-6">
+            {{ form.year.label }}
+            {{ form.year }}
+        </div>
+        <div class="col-md-6">
+            {{ form.part.label }}
+            {{ form.part }}
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <button type="submit" class="btn btn-success">Create Batch</button>
+    </div>
+</form>
+
+{% endblock %}

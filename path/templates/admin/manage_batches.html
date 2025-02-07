@@ -1,25 +1,21 @@
 {% extends 'admin_base.html' %}
 
-{% block title %}Admin Panel - Dashboard{% endblock %}
+{% block title %}Manage Batches{% endblock %}
 
 {% block content %}
-<h2 class="text-center">Dashboard</h2>
+<h2 class="text-center">Manage Batches</h2>
 <div class="cards-container">
-    <div class="card" onclick="window.location.href='{% url 'manage_courses' %}'">
-        <h3>Manage Courses</h3>
-        <p>View, add, edit or delete courses</p>
+    <div class="card" onclick="window.location.href='{% url 'view_batches' %}'">
+        <h3>View Courses</h3>
+        <p>Browse the list of available Batches</p>
     </div>
-    <div class="card" onclick="window.location.href='{% url 'manage_batches' %}'">
-        <h3>Manage Batches</h3>
-        <p>Control and manage course batches</p>
+    <div class="card" onclick="window.location.href='{% url 'create_batch' %}'">
+        <h3>create_batch</h3>
+        <p>Add new batches to the system</p>
     </div>
-    <div class="card" onclick="window.location.href='#'">
-        <h3>Manage Allotments</h3>
-        <p>Allocate resources and manage student allotments</p>
-    </div>
-    <div class="card" onclick="alert('Navigating to Manage Students')">
-        <h3>Manage Students</h3>
-        <p>Manage student profiles, enrollments, and information</p>
+    <div class="card" onclick="window.location.href='{% url 'edit_batches' %}'">
+        <h3>Edit batch</h3>
+        <p>Modify existing Batches details</p>
     </div>
 </div>
 

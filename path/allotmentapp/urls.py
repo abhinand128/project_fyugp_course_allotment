@@ -17,6 +17,12 @@ urlpatterns = [
     path('edit_course/<int:course_id>/', views.edit_course, name='edit_course'),
     path('delete_course/<int:course_id>/', views.delete_course, name='delete_course'),
     path('manage_courses/', views.manage_courses, name='manage_courses'),
+    path('manage_batches/', views.manage_batches, name='manage_batches'),
+    path('edit_batches/', views.edit_batches, name='edit_batches'),
+    path('view_batches/', views.view_batches, name='view_batches'),
+    path('create_batch/', views.create_batch, name='create_batch'),
+    path('edit_batch/<int:batch_id>/', views.edit_batch, name='edit_batch'),
+    path('delete_batch/<int:batch_id>/', views.delete_batch, name='delete_batch'),
 
 
 ]

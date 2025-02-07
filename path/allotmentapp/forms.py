@@ -136,3 +136,25 @@ class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
         fields = ['course_code', 'course_name', 'course_type', 'department', 'semester', 'seat_limit']
+
+class BatchForm(forms.ModelForm):
+    class Meta:
+        model = Batch
+        fields = ['year', 'part']  # Removed 'course' as it's auto-assigned
+
+    def clean(self):
+        cleaned_data = super().clean()
+        year = cleaned_data.get('year')
+        part = cleaned_data.get('part')
+
+        if not year or not part:
+            raise forms.ValidationError("Year and Part are required!")
+
+        return cleaned_data
+
+   
+
+class BatchFilterForm(forms.Form):
+    course = forms.ModelChoiceField(queryset=Course.objects.all(), required=False)
+    year = forms.CharField(max_length=9, required=False)
+    part = forms.ChoiceField(choices=[(1, 'Part 1'), (2, 'Part 2')], required=False)

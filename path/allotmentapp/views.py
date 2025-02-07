@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Student,Course,CoursePreference
-from .forms import StudentForm,CourseFilterForm,CourseSelectionForm,CourseForm
+from .models import Student,Course,CoursePreference,Batch
+from .forms import StudentForm,CourseFilterForm,CourseSelectionForm,CourseForm,BatchForm,BatchFilterForm
 
 def index(request):
     return render(request, 'index.html')
@@ -273,3 +273,89 @@ def delete_course(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     course.delete()  # Delete the course
     return redirect('view_courses')  # Redirect to the courses page
+
+def view_batches(request):
+    """Display all batches."""
+    batches = Batch.objects.all()
+    return render(request, 'admin/view_batches.html', {'batches': batches})
+
+def manage_batches(request):
+    """Render the manage batches page."""
+    return render(request, 'admin/manage_batches.html')
+
+def edit_batches(request):
+    """Display all batches."""
+    batches = Batch.objects.all()
+    return render(request, 'admin/edit_batches.html', {'batches': batches})
+
+
+
+def create_batch(request):
+    courses = Course.objects.all()  # Default all courses
+    filter_form = CourseFilterForm(request.GET or None)
+
+    if filter_form.is_valid():
+        course_type = filter_form.cleaned_data.get('course_type')
+        department = filter_form.cleaned_data.get('department')
+        semester = filter_form.cleaned_data.get('semester')
+
+        if course_type or department or semester:
+            if course_type:
+                courses = courses.filter(course_type=course_type)
+            if department:
+                courses = courses.filter(department=department)
+            if semester:
+                courses = courses.filter(semester=semester)
+
+    if request.method == 'POST':
+        form = BatchForm(request.POST)
+
+        if form.is_valid():
+            year = form.cleaned_data['year']
+            part = form.cleaned_data['part']
+
+            if courses.exists():
+                for course in courses:
+                    batch, created = Batch.objects.get_or_create(
+                        course=course, year=year, part=part
+                    )
+
+                messages.success(request, "Batch created successfully!")
+                return redirect('admin/view_batches')  # Redirect to view batches
+            else:
+                messages.error(request, "No courses found for the given selection.")
+
+    else:
+        form = BatchForm()
+
+    return render(request, 'admin/create_batch.html', {
+        'form': form,
+        'filter_form': filter_form,
+        'courses': courses
+    })
+
+
+
+
+def edit_batch(request, batch_id):
+    """Edit batch status (only status can be changed)."""
+    batch = get_object_or_404(Batch, id=batch_id)  
+    course = batch.course  # Get the single related course
+
+    if request.method == 'POST':
+        status_value = request.POST.get('status')  # Get status from form
+        batch.status = status_value == "True"  # Convert string to boolean
+        batch.save()
+        return redirect('admin/view_batches')  # Redirect after successful update
+
+    return render(request, 'admin/edit_batch.html', {
+        'batch': batch,
+        'course': course  # Pass the single course
+    })
+
+
+def delete_batch(request, batch_id):
+    """Delete a batch."""
+    batch = get_object_or_404(Batch, id=batch_id)
+    batch.delete()
+    return redirect('admin/view_batches')  # Redirect to the batches page after deletion
