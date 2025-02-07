@@ -1,0 +1,41 @@
+{% extends 'student_base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">Your Selected Courses</h2>
+
+    {% for paper_no, preferences in categorized_preferences.items %}
+        {% if preferences %}
+            <h4 class="mt-4">
+                {% if paper_no == 1 %} Major Course
+                {% elif paper_no == 2 %} Minor Courses (DSC 2)
+                {% elif paper_no == 3 %} Minor Courses (DSC 3)
+                {% elif paper_no == 4 %} MDC
+                {% endif %}
+            </h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Preference</th>
+                        <th>Course Name</th>
+                        <th>Department</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for option, preference in preferences.items %}
+                        <tr>
+                            <td>{{ option|title }}</td>  <!-- Displays Option_1, Option_2, etc. -->
+                            <td>{{ preference.batch.course.course_name }}</td>
+                            <td>{{ preference.batch.course.department }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    {% endfor %}
+
+    <div class="text-center mt-4">
+        <a href="{% url 'edit_preferences' %}" class="btn btn-primary">Edit Preferences</a>
+    </div>
+</div>
+{% endblock %}
