@@ -131,3 +131,8 @@ class CourseSelectionForm(forms.Form):
 
         # Debug: Print final field order
         print("Final Field Order:", list(self.fields.keys()))
+
+class CourseForm(forms.ModelForm):
+    class Meta:
+        model = Course
+        fields = ['course_code', 'course_name', 'course_type', 'department', 'semester', 'seat_limit']

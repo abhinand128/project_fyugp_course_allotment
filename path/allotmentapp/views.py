@@ -1,9 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
 from .models import Student,Course,CoursePreference
-from .forms import StudentForm,CourseFilterForm,CourseSelectionForm
+from .forms import StudentForm,CourseFilterForm,CourseSelectionForm,CourseForm
 
 def index(request):
     return render(request, 'index.html')
@@ -181,3 +181,95 @@ def view_preferences(request):
     return render(request, 'student/view_preferences.html', {
         'categorized_preferences': categorized_preferences
     })
+
+
+def manage_courses(request):
+    """Render the manage courses page."""
+    return render(request, 'admin/manage_courses.html', {'page_name': 'Manage Courses'})
+
+def view_courses(request):
+    """Display a list of courses with optional filters."""
+    form = CourseFilterForm(request.GET)  # Initialize the filter form
+    courses = Course.objects.all()
+
+    # Apply filters if the form is valid
+    if form.is_valid():
+        course_type = form.cleaned_data.get('course_type')
+        department = form.cleaned_data.get('department')
+        semester = form.cleaned_data.get('semester')
+
+        if course_type:
+            courses = courses.filter(course_type=course_type)
+        if department:
+            courses = courses.filter(department=department)
+        if semester:
+            courses = courses.filter(semester=semester)
+
+    context = {
+        'courses': courses,
+        'form': form,
+        'page_name': 'Courses',  # Passed dynamically
+    }
+    return render(request, 'admin/view_courses.html', context)
+
+
+def edit_courses(request):
+    """Display a list of courses with optional filters."""
+    form = CourseFilterForm(request.GET)  # Initialize the filter form
+    courses = Course.objects.all()
+
+    # Apply filters if the form is valid
+    if form.is_valid():
+        course_type = form.cleaned_data.get('course_type')
+        department = form.cleaned_data.get('department')
+        semester = form.cleaned_data.get('semester')
+
+        if course_type:
+            courses = courses.filter(course_type=course_type)
+        if department:
+            courses = courses.filter(department=department)
+        if semester:
+            courses = courses.filter(semester=semester)
+
+    context = {
+        'courses': courses,
+        'form': form,
+        'page_name': 'Courses',  # Passed dynamically
+    }
+    return render(request, 'admin/edit_courses.html', context)
+
+def add_course(request):
+    """Add a new course."""
+    if request.method == 'POST':
+        form = CourseForm(request.POST)  # Handle form submission
+        if form.is_valid():
+            form.save()
+            return redirect('view_courses')  # Redirect to the courses page
+    else:
+        form = CourseForm()  # Create an empty form for GET request
+
+    return render(request, 'admin/add_course.html', {'form': form, 'page_name': 'Add Course'})
+
+def edit_course(request, course_id):
+    """Edit an existing course."""
+    course = get_object_or_404(Course, id=course_id)
+    if request.method == 'POST':
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            return redirect('view_courses')  # Redirect to the courses page
+    else:
+        form = CourseForm(instance=course)  # Populate form with course data
+
+    context = {
+        'form': form,
+        'course': course,
+        'page_name': 'Edit Course',  # Passed dynamically
+    }
+    return render(request, 'admin/edit_course.html', context)
+
+def delete_course(request, course_id):
+    """Delete a course."""
+    course = get_object_or_404(Course, id=course_id)
+    course.delete()  # Delete the course
+    return redirect('view_courses')  # Redirect to the courses page

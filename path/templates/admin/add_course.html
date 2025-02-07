@@ -1,0 +1,71 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}Add Course{% endblock %}
+
+{% block content %}
+<style>
+    /* Custom styling for form elements */
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px;
+        background-color: #f9f9f9;
+        border-radius: 16px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    .form-container h1 {
+        font-size: 2rem;
+        font-weight: 600;
+    }
+    .btn-custom {
+        width: 48%;
+    }
+    .btn-back {
+        background-color: #007bff;
+        color: white;
+    }
+</style>
+<div class="container my-5">
+    <div class="form-container">
+        <h1 class="text-center mb-4">Add Course</h1>
+        
+        <!-- Load custom filters -->
+        {% load custom_filters %}
+
+        <!-- Course Form -->
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="course_code" class="form-label">Course Code</label>
+                {{ form.course_code|add_class:"form-control" }}
+            </div>
+            <div class="mb-3">
+                <label for="course_name" class="form-label">Course Name</label>
+                {{ form.course_name|add_class:"form-control" }}
+            </div>
+            <div class="mb-3">
+                <label for="course_type" class="form-label">Course Type</label>
+                {{ form.course_type|add_class:"form-select" }}
+            </div>
+            <div class="mb-3">
+                <label for="department" class="form-label">Department</label>
+                {{ form.department|add_class:"form-select" }}
+            </div>
+            <div class="mb-3">
+                <label for="semester" class="form-label">Semester</label>
+                {{ form.semester|add_class:"form-control" }}
+            </div>
+            <div class="mb-3">
+                <label for="seat_limit" class="form-label">Seat Limit</label>
+                {{ form.seat_limit|add_class:"form-control" }}
+            </div>
+
+            <!-- Submit Button and View Courses Button -->
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-success btn-custom">Add Course</button>
+                <a href="{% url 'view_courses' %}" class="btn btn-back btn-custom">View Courses</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
