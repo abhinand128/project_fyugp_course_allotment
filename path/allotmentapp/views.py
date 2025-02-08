@@ -106,7 +106,7 @@ def course_selection(request):
     # Check if preferences already exist for the student
     existing_preferences = CoursePreference.objects.filter(student=student)
     if existing_preferences.exists():
-        return render(request, 'course_selection.html', {'view_preferences': True, 'already_submitted': True})
+        return render(request, 'student/course_selection.html', {'view_preferences': True, 'already_submitted': True})
 
     if request.method == 'POST':
         form = CourseSelectionForm(request.POST, student=student)
@@ -321,7 +321,7 @@ def create_batch(request):
                     )
 
                 messages.success(request, "Batch created successfully!")
-                return redirect('admin/view_batches')  # Redirect to view batches
+                return redirect('view_batches')  # Redirect to view batches
             else:
                 messages.error(request, "No courses found for the given selection.")
 
