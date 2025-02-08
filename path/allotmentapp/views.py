@@ -23,6 +23,11 @@ def admin_login(request):
 
     return render(request, "login/admin_login.html")  # Render custom admin login page
 
+def admin_logout(request):
+    logout(request)
+    return redirect('home')  # Redirect to the login page after logout
+
+
 # Student Login View
 def student_login(request):
     if request.method == 'POST':

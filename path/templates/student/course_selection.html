@@ -6,9 +6,42 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         {% if already_submitted %}
-            alert("You have already submitted your preferences.");
-            window.location.href = "{% url 'view_preferences' %}";
+        alert("You have already submitted your preferences.");
+        window.location.href = "{% url 'view_preferences' %}";
         {% endif %}
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropdowns = document.querySelectorAll('select');
+
+        function updateDropdowns() {
+            let selectedValues = new Set();
+
+            // Collect selected values
+            dropdowns.forEach(dropdown => {
+                if (dropdown.value) {
+                    selectedValues.add(dropdown.value);
+                }
+            });
+
+            // Disable already selected values in other dropdowns
+            dropdowns.forEach(dropdown => {
+                const options = dropdown.querySelectorAll('option');
+                options.forEach(option => {
+                    if (option.value && selectedValues.has(option.value) && option.value !== dropdown.value) {
+                        option.disabled = true;
+                    } else {
+                        option.disabled = false;
+                    }
+                });
+            });
+        }
+
+        dropdowns.forEach(dropdown => {
+            dropdown.addEventListener('change', updateDropdowns);
+        });
+
+        updateDropdowns();
     });
 </script>
 
@@ -18,24 +51,75 @@
         {% if not already_submitted %}
         <form method="post">
             {% csrf_token %}
-            <div class="mb-3">
-                {% for field in form %}
-                    <div class="mb-3">
-                        <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
-                        <select class="form-select" id="{{ field.id_for_label }}" name="{{ field.html_name }}">
-                            <option value="" selected disabled>Select an option</option>
-                            {% for choice in field.field.queryset %}
-                                <option value="{{ choice.id }}">
-                                    {{ choice.course.department.name }} - {{ choice.course.course_name }}
-                                </option>
-                            {% endfor %}
-                        </select>
+
+            <!-- DSC 1 (Major) -->
+            <div class="p-3 mb-3 rounded" style="background-color: #d1e7dd;">
+                <h3 class="text-center fw-bold">Select Paper 1 (Major - DSC 1)</h3>
+
+                <div class="option-box">
+                    <label for="{{ form.dsc_1.id_for_label }}">Option 1</label>
+                    {{ form.dsc_1 }}
+                </div>
+
+                {% if form.dsc_1.errors %}
+                <div class="text-danger small">{{ form.dsc_1.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- DSC 2 -->
+            <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #cfe2ff;">
+                <h3>Select Paper 2 (Minor - DSC 2)</h3>
+                <div class="options-container">
+                    {% for field in form %}
+                    {% if "dsc_2_option" in field.name %}
+                    <div class="option-box">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
                         {% if field.errors %}
-                            <div class="text-danger small">{{ field.errors|join:", " }}</div>
+                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
                         {% endif %}
                     </div>
-                {% endfor %}
+                    {% endif %}
+                    {% endfor %}
+                </div>
             </div>
+
+            <!-- DSC 3 -->
+            <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #f8d7da;">
+                <h3>Select Paper 3 (Minor - DSC 3)</h3>
+                <div class="options-container">
+                    {% for field in form %}
+                    {% if "dsc_3_option" in field.name %}
+                    <div class="option-box">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- MDC -->
+            <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #fff3cd;">
+                <h3>Select Paper 4 (MDC)</h3>
+                <div class="options-container">
+                    {% for field in form %}
+                    {% if "mdc_option" in field.name %}
+                    <div class="option-box">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
             <div class="text-center mt-4">
                 <button type="submit" class="btn btn-primary btn-lg">Submit</button>
             </div>
@@ -47,44 +131,44 @@
         {% endif %}
     </div>
 </div>
+<style>
+    /* Ensure consistent dropdown size */
+    select {
+        width: 100%;
+        /* Make all dropdowns take full width */
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        background-color: white;
+    }
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const dropdowns = document.querySelectorAll('select.form-select');
-        
-        // Ensure that both the department and course name appear in the options.
-        dropdowns.forEach(dropdown => {
-            dropdown.querySelectorAll('option').forEach(option => {
-                // Do nothing here, let the full text be shown as generated by Django template
-            });
-        });
+    /* Align labels properly */
+    .option-box {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 10px;
+    }
 
-        const updateDropdowns = () => {
-            const selectedValues = new Set();
+    .option-box label {
+        font-weight: bold;
+        min-width: 120px;
+        text-align: right;
+    }
 
-            dropdowns.forEach(dropdown => {
-                if (dropdown.value) {
-                    selectedValues.add(dropdown.value);
-                }
-            });
+    /* Responsive Fix: Stack labels on small screens */
+    @media (max-width: 768px) {
+        .option-box {
+            flex-direction: column;
+            align-items: flex-start;
+        }
 
-            dropdowns.forEach(dropdown => {
-                const options = dropdown.querySelectorAll('option');
-                options.forEach(option => {
-                    if (selectedValues.has(option.value) && option.value !== dropdown.value) {
-                        option.disabled = true;
-                    } else {
-                        option.disabled = false;
-                    }
-                });
-            });
-        };
+        .option-box label {
+            text-align: left;
+        }
+    }
+</style>
 
-        dropdowns.forEach(dropdown => {
-            dropdown.addEventListener('change', updateDropdowns);
-        });
 
-        updateDropdowns();
-    });
-</script>
+
 {% endblock %}

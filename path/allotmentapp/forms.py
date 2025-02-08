@@ -69,7 +69,7 @@ class CourseSelectionForm(forms.Form):
             self.fields['dsc_1'] = forms.ModelChoiceField(
                 queryset=dsc_1_batches,
                 required=True,
-                label='Select Major (DSC 1)',
+                label='',
                 empty_label="Select an option",
             )
             self.fields['dsc_1'].label_from_instance = batch_label
@@ -83,7 +83,7 @@ class CourseSelectionForm(forms.Form):
                     self.fields[field_name] = forms.ModelChoiceField(
                         queryset=dsc_2_batches,
                         required=True,
-                        label=f'Select Minor (DSC 2) Option {i}',
+                        label=f'Option {i}',
                         empty_label="Select an option",
                     )
                     self.fields[field_name].label_from_instance = batch_label
@@ -95,7 +95,7 @@ class CourseSelectionForm(forms.Form):
                     self.fields[field_name] = forms.ModelChoiceField(
                         queryset=dsc_2_batches,
                         required=True,
-                        label=f'Select Minor (DSC 2) Option {i}',
+                        label=f'Option {i}',
                         empty_label="Select an option",
                     )
                     self.fields[field_name].label_from_instance = batch_label
@@ -107,7 +107,7 @@ class CourseSelectionForm(forms.Form):
                 self.fields[field_name] = forms.ModelChoiceField(
                     queryset=dsc_3_batches,
                     required=True,
-                    label=f'Select Minor (DSC 3) Option {i}',
+                    label=f'Option {i}',
                     empty_label="Select an option",
                 )
                 self.fields[field_name].label_from_instance = batch_label
@@ -120,7 +120,7 @@ class CourseSelectionForm(forms.Form):
                 self.fields[field_name] = forms.ModelChoiceField(
                     queryset=mdc_filtered_batches,
                     required=True,
-                    label=f'Select MDC Option {i}',
+                    label=f'Option {i}',
                     empty_label="Select an option",
                 )
                 self.fields[field_name].label_from_instance = batch_label
