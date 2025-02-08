@@ -47,6 +47,9 @@ class Student(models.Model):
             self.user = user
         super().save(*args, **kwargs)
 
+    def __str__(self):
+        return f"{self.admission_number} - {self.name}"
+
 class Course_type(models.Model):
     name = models.CharField(max_length=100)
 
