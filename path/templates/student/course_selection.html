@@ -5,45 +5,16 @@
 {% block content %}
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        {% if already_submitted %}
-        alert("You have already submitted your preferences.");
-        window.location.href = "{% url 'view_preferences' %}";
+        {% if already_allocated %}
+            alert("You have already been allocated courses. You cannot submit preferences again.");
+            window.location.replace("{% url 'view_student_allotment' %}"); // Prevent back navigation
+        {% elif already_submitted %}
+            alert("You have already submitted your preferences.");
+            window.location.replace("{% url 'view_preferences' %}");
         {% endif %}
     });
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const dropdowns = document.querySelectorAll('select');
-
-        function updateDropdowns() {
-            let selectedValues = new Set();
-
-            // Collect selected values
-            dropdowns.forEach(dropdown => {
-                if (dropdown.value) {
-                    selectedValues.add(dropdown.value);
-                }
-            });
-
-            // Disable already selected values in other dropdowns
-            dropdowns.forEach(dropdown => {
-                const options = dropdown.querySelectorAll('option');
-                options.forEach(option => {
-                    if (option.value && selectedValues.has(option.value) && option.value !== dropdown.value) {
-                        option.disabled = true;
-                    } else {
-                        option.disabled = false;
-                    }
-                });
-            });
-        }
-
-        dropdowns.forEach(dropdown => {
-            dropdown.addEventListener('change', updateDropdowns);
-        });
-
-        updateDropdowns();
-    });
 </script>
+
 
 <div class="container mt-5">
     <h2 class="text-center mb-4">Course Selection</h2>
@@ -53,6 +24,12 @@
             {% csrf_token %}
 
             <!-- DSC 1 (Major) -->
+            <h3>Student Info</h3>
+            <p>Name: {{ student.name }}</p>
+            <p>Department: {{ student.department }}</p>
+            <p>Pathway: {{ student.pathway }}</p>
+            
+            
             <div class="p-3 mb-3 rounded" style="background-color: #d1e7dd;">
                 <h3 class="text-center fw-bold">Select Paper 1 (Major - DSC 1)</h3>
 
@@ -86,7 +63,16 @@
 
             <!-- DSC 3 -->
             <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #f8d7da;">
-                <h3>Select Paper 3 (Minor - DSC 3)</h3>
+                <h3>
+                    
+
+
+                    {% if student.pathway.name == "Double Major" %}
+                    Select Paper 3 (Second Major - DSC 3)
+                    {% else %}
+                    Select Paper 3 (Minor - DSC 3)
+                    {% endif %}
+                </h3>
                 <div class="options-container">
                     {% for field in form %}
                     {% if "dsc_3_option" in field.name %}
@@ -101,6 +87,7 @@
                     {% endfor %}
                 </div>
             </div>
+
 
             <!-- MDC -->
             <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #fff3cd;">

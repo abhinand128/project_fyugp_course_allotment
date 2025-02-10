@@ -1,0 +1,40 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}View Allotments{% endblock %}
+
+{% block content %}
+<h1>Course Allotments</h1>
+
+{% if allotment_data %}
+<table class="table table-bordered table-hover">  <thead>
+        <tr>
+            <th>Admission Number</th>
+            <th>Name</th>
+            <th>Department</th>
+            <th>Pathway</th>
+            <th>Paper 1 (DSC1)</th>
+            <th>Paper 2 (DSC3)</th>
+            <th>Paper 3 (DSC3)</th>
+            <th>Paper 4 (MDC)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for allotment in allotment_data %}
+        <tr>
+            <td>{{ allotment.admission_number }}</td>
+            <td>{{ allotment.name }}</td>
+            <td>{{ allotment.department }}</td>
+            <td>{{ allotment.pathway }}</td>
+            <td>{{ allotment.paper1 }}</td>
+            <td>{{ allotment.paper2 }}</td>
+            <td>{{ allotment.paper3 }}</td>
+            <td>{{ allotment.paper4 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No allotments found.</p>
+{% endif %}
+
+{% endblock %}

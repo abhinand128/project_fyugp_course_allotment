@@ -4,90 +4,350 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Admin Panel{% if page_name %} - {{ page_name }}{% endif %}{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <style>
-        /* Navbar styling */
-        .navbar {
-            background-color: #343a40;
+        ::after, ::before {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        .navbar-brand, .navbar-nav .nav-link {
-            color: #fff !important;
+    
+        body {
+            font-family: 'Poppins', sans-serif;
         }
-        .navbar-brand:hover, .navbar-nav .nav-link:hover {
-            color: #ffc107 !important;
+    
+        .wrapper {
+            display: flex;
         }
-        .navbar-toggler {
-            border-color: #ffc107;
+    
+        /* Sidebar Styling */
+        #sidebar {
+            width: 70px;
+            min-width: 70px;
+            z-index: 1000;
+            transition: all .25s ease-in-out;
+            background-color: #000000;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
         }
-        .navbar-toggler-icon {
-            background-color: #ffc107;
+    
+        #sidebar.expand {
+            width: 260px;
+            min-width: 260px;
         }
-
-        /* Footer styling */
-        footer {
-            background-color: #000;
-            color: #fff;
-            padding: 20px 0;
-            text-align: center;
-            font-size: 0.9rem;
+    
+        .toggle-btn {
+            background-color: transparent;
+            cursor: pointer;
+            border: 0;
+            padding: 1rem 1.5rem;
         }
-        footer a {
-            color: #ffc107;
+    
+        .toggle-btn i {
+            font-size: 1.5rem;
+            color: #FFF;
+        }
+    
+        .sidebar-logo {
+            margin: auto 0;
+        }
+    
+        .sidebar-logo a {
+            color: #FFF;
+            font-size: 1.15rem;
+            font-weight: 600;
             text-decoration: none;
         }
-        footer a:hover {
-            text-decoration: underline;
+    
+        #sidebar:not(.expand) .sidebar-logo,
+        #sidebar:not(.expand) a.sidebar-link span {
+            display: none;
+        }
+    
+        #sidebar.expand .sidebar-logo,
+        #sidebar.expand a.sidebar-link span {
+            animation: fadeIn .25s ease;
+        }
+    
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+    
+        .sidebar-nav {
+            padding: 2rem 0;
+            flex: 1 1 auto;
+        }
+    
+        .sidebar-link {
+            padding: .625rem 1.625rem;
+            color: #FFF;
+            display: block;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            border-left: 3px solid transparent;
+            text-decoration: none;
+        }
+    
+        .sidebar-link i {
+            font-size: 1.1rem;
+            margin-right: .75rem;
+        }
+    
+        .sidebar-link:hover {
+            background-color: rgba(255, 255, 255, .075);
+            border-left: 3px solid #3b7ddd;
+            color: #FFF;
+        }
+    
+        .sidebar-item {
+            position: relative;
+        }
+    
+        #sidebar:not(.expand) .sidebar-item .sidebar-dropdown {
+            position: absolute;
+            top: 0;
+            left: 70px;
+            background-color: #000000;
+            padding: 0;
+            min-width: 15rem;
+            display: none;
+        }
+    
+        #sidebar:not(.expand) .sidebar-item:hover .has-dropdown+.sidebar-dropdown {
+            display: block;
+            max-height: 15em;
+            width: 100%;
+            opacity: 1;
+        }
+    
+        #sidebar.expand .sidebar-link[data-bs-toggle="collapse"]::after {
+            border: solid;
+            border-width: 0 .075rem .075rem 0;
+            content: "";
+            display: inline-block;
+            padding: 2px;
+            position: absolute;
+            right: 1.5rem;
+            top: 1.4rem;
+            transform: rotate(-135deg);
+            transition: all .2s ease-out;
+        }
+    
+        #sidebar.expand .sidebar-link[data-bs-toggle="collapse"].collapsed::after {
+            transform: rotate(45deg);
+        }
+    
+        /* Main Content Styling */
+        .main {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            width: 100%;
+            overflow: hidden;
+            transition: all 0.35s ease-in-out;
+            background-color: #f5f5f5;
+            min-width: 0;
+        }
+    
+        /* Navbar Styling */
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 0 2rem 0 rgba(33, 37, 41, .1);
+            position: sticky;
+            top: 0;
+            z-index: 1001;
+        }
+    
+        .avatar {
+            height: 40px;
+            width: 40px;
+            border-radius: 50%;
+        }
+    
+        /* Content Styling */
+        .content {
+            padding: 2rem;
+            flex: 1 0 auto;
+            overflow-y: auto;
+        }
+    
+        .card {
+            background: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 0 1rem rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+        }
+    
+        /* Footer Styling */
+        .footer {
+            background-color: #fff;
+            padding: 1rem 0;
+            box-shadow: 0 0 2rem 0 rgba(33, 37, 41, .1);
         }
     </style>
+    
 </head>
 <body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                Admin Panel 
-                {% if page_name %} |
-                <span class="text-warning">  {{ page_name }}</span>
-                {% endif %}
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Courses</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">batches</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Logout</a>
-                    </li>
-                </ul>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="d-flex">
+                <button class="toggle-btn" type="button">
+                    <i class="lni lni-grid-alt"></i>
+                </button>
+                <div class="sidebar-logo">
+                    <a href="#">PATH Admin</a>
+                </div>
             </div>
-        </div>
-    </nav>
+            <ul class="sidebar-nav">
+                <li class="sidebar-item">
+                    <a href="{% url 'admin_dashboard' %}" class="sidebar-link">
+                        <i class="lni lni-dashboard"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#courses" aria-expanded="false" aria-controls="courses">
+                        <i class="lni lni-book"></i>
+                        <span>Courses</span>
+                    </a>
+                    <ul id="courses" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="{% url 'view_courses' %}" class="sidebar-link">View Courses</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{% url 'add_course' %}" class="sidebar-link">Add Course</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{% url 'edit_courses' %}" class="sidebar-link">Edite Course</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#batches" aria-expanded="false" aria-controls="batches">
+                        <i class="lni lni-graduation"></i>
+                        <span>Batches</span>
+                    </a>
+                    <ul id="batches" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="{% url 'view_batches' %}" class="sidebar-link">View Batches</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{% url 'create_batch' %}" class="sidebar-link">Add Batch</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{% url 'edit_batches' %}" class="sidebar-link">Edit Batch</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'manage_allotment' %}" class="sidebar-link">
+                        <i class="lni lni-cog"></i>
+                        <span>Manage Allotment</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-users"></i>
+                        <span>Manage Students</span>
+                    </a>
+                </li>
+                </ul>
+                
+            <div class="sidebar-footer">
+                <a href="{% url 'admin_logout' %}" class="sidebar-link">
+                    <i class="lni lni-exit"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
 
-    <!-- Content -->
-    <div class="container my-5">
-        {% block content %}
-        <!-- Page-specific content goes here -->
-        {% endblock %}
+        <!-- Main Content -->
+        <div class="main">
+            <nav class="navbar navbar-expand px-4 py-3">
+                <h4 class="mb-0">{% if page_name %}{{ page_name }}{% else %}Dashboard{% endif %}</h4>
+                <div class="navbar-collapse collapse">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0">
+                                <img src="/api/placeholder/40/40" class="avatar img-fluid" alt="">
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a class="dropdown-item" href="{% url 'admin_logout' %}">Logout</a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Content -->
+            <main class="content">
+                {% block content %}
+                <!-- Page-specific content goes here -->
+                {% endblock %}
+            </main>
+
+            <!-- Footer -->
+            <footer class="footer">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-0">
+                                Program Allotment and Tracking Hub (PATH) &copy;2025
+                            </p>
+                        </div>
+                        <div class="col-6 text-end">
+                            <p class="mb-0">
+                                Developed by Department of Computer Science
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
     </div>
 
-    <!-- Footer -->
-    <footer>
-        <p>
-            Program Allotment and Tracking Hub (PATH) &copy;2025 | 
-            Developed by <a href="#">Department of Computer Science</a>
-        </p>
-    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleBtn = document.querySelector('.toggle-btn');
+            const sidebar = document.querySelector('#sidebar');
 
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+            toggleBtn.addEventListener('click', function() {
+                sidebar.classList.toggle('expand');
+            });
 
+            // Handle dropdown hover effects when sidebar is not expanded
+            const dropdownItems = document.querySelectorAll('.sidebar-item');
+            dropdownItems.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    if (!sidebar.classList.contains('expand')) {
+                        const dropdown = this.querySelector('.sidebar-dropdown');
+                        if (dropdown) {
+                            dropdown.style.display = 'block';
+                        }
+                    }
+                });
+
+                item.addEventListener('mouseleave', function() {
+                    if (!sidebar.classList.contains('expand')) {
+                        const dropdown = this.querySelector('.sidebar-dropdown');
+                        if (dropdown) {
+                            dropdown.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

@@ -1,21 +1,11 @@
-{% extends 'student_base.html' %}
+{% extends 'admin_base.html' %}
 
-{% block title %}Admin Panel - Dashboard{% endblock %}
+{% block title %}Manage Allotments{% endblock %}
 
 {% block content %}
-<h2 class="text-center">Dashboard</h2>
 <div class="cards-container">
-    <div class="card" onclick="window.location.href='{% url 'view_courses_student' %}'">
-        <h3>View Courses</h3>
-        <p>You can see all available Courses here</p>
-    </div>
-    <div class="card" onclick="window.location.href='{% url 'course_selection' %}'">
-        <h3>Course selection Portal</h3>
-        <p>You can Select Courses and edit preferences here</p>
-    </div>
-    <div class="card" onclick="window.location.href='{% url 'view_student_allotment' %}'">
-        <h3>View Allotment result</h3>
-        <p>You can see allocate Courses here</p>
+    <div class="card" onclick="window.location.href='{% url 'first_sem_allotment' %}'">
+        <h3>1 SEMESTER</h3>
     </div>
 </div>
 

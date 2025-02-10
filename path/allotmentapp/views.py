@@ -1,10 +1,49 @@
 from django.shortcuts import render, redirect,get_object_or_404
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Student,Course,CoursePreference,Batch
+from .models import Student,Course,CoursePreference,Batch,CourseAllotment
 from .forms import StudentForm,CourseFilterForm,CourseSelectionForm,CourseForm,BatchForm,BatchFilterForm
+from django.db import transaction
 
+def allocate_courses():
+    with transaction.atomic():
+        # 1. Allocate Paper 1:
+        for student in Student.objects.all():
+            allocated = False
+            preferences = CoursePreference.objects.filter(student=student, paper_no=1).order_by('preference_number')
+            for preference in preferences:
+                batch = preference.batch
+                if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
+                    CourseAllotment.objects.create(student=student, batch=batch, paper_no=1)  # paper_no = 1
+                    allocated = True
+                    break
+
+            if not allocated:
+                print(f"Warning: Student {student.admission_number} could not be allocated Paper 1. All preferences full.")
+                # Add default allocation logic here if needed (see previous examples)
+
+        # 2. Allocate remaining papers (2, 3, 4...):
+        for paper_no in range(2, 5):
+            students = Student.objects.order_by('-normalized_marks')
+            for student in students:
+                allocated = False
+                allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
+                preferences = CoursePreference.objects.filter(student=student, paper_no=paper_no).exclude(batch__in=allotted_batches).order_by('preference_number')
+                for preference in preferences:
+                    batch = preference.batch
+                    if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
+                        CourseAllotment.objects.create(student=student, batch=batch, paper_no=paper_no)  # Save paper_no
+                        allocated = True
+                        break
+
+                if not allocated:
+                    print(f"Warning: Student {student.admission_number} could not be allocated Paper {paper_no}. All preferences full.")
+                    # Add default allocation logic here if needed (see previous examples)
+
+
+    
 def index(request):
     return render(request, 'index.html')
 
@@ -22,6 +61,16 @@ def admin_login(request):
             messages.error(request, "Invalid credentials or not an admin.")
 
     return render(request, "login/admin_login.html")  # Render custom admin login page
+
+def manage_allotment(request):
+    """Render the manage courses page."""
+    return render(request, 'admin/manage_allocation.html', {'page_name': 'manage allocation'})
+
+
+def first_sem_allotment(request):
+    """Render the manage courses page."""
+    return render(request, 'admin/first_sem_allotment.html', {'page_name': 'first semester allotment'})
+
 
 def admin_logout(request):
     logout(request)
@@ -98,27 +147,39 @@ def view_courses_student(request):
     return render(request, 'student/view_courses_students.html', context)
 
 
-def course_selection(request):
-    student = request.user.student
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from .models import CoursePreference, Student
+from .forms import CourseSelectionForm
 
+def course_selection(request):
     try:
-        student = request.user.student  
+        student = Student.objects.select_related('pathway', 'department').get(user=request.user)
         print("Student Object:", student)
-    except student.DoesNotExist:
+        print("Student Department:", student.department)
+        print("Student Pathway:", student.pathway)
+    except Student.DoesNotExist:
         print("No student found for admission number:", request.user.username)
         return render(request, 'error.html', {'message': 'Student not found'})
-    
-    # Check if preferences already exist for the student
-    existing_preferences = CoursePreference.objects.filter(student=student)
-    if existing_preferences.exists():
-        return render(request, 'student/course_selection.html', {'view_preferences': True, 'already_submitted': True})
+
+   # Check if preferences or allotment already exist
+    existing_preferences = CoursePreference.objects.filter(student=student).exists()
+    already_allocated = CourseAllotment.objects.filter(student=student).exists()
+
+    if existing_preferences or already_allocated:
+        return render(request, 'student/course_selection.html', {
+            'view_preferences': True,
+            'already_submitted': True,
+            'already_allocated': already_allocated,
+            'student': student  # Pass student explicitly
+        })
 
     if request.method == 'POST':
         form = CourseSelectionForm(request.POST, student=student)
         if form.is_valid():
             preferences = []
 
-            # Handle DSC 1 separately (since it has no "_option_" in its name)
+            # Handle DSC 1 separately
             preferences.append(
                 CoursePreference(
                     student=student,
@@ -134,26 +195,21 @@ def course_selection(request):
                     preference_number = int(field_name.split("_")[-1])  # Extract preference number
 
                     # Determine paper_no
-                    if field_name.startswith("dsc_2"):
-                        paper_no = 2
-                    elif field_name.startswith("dsc_3"):
-                        paper_no = 3
-                    elif field_name.startswith("mdc"):
-                        paper_no = 4
-                    else:
-                        continue  
+                    paper_no = 2 if field_name.startswith("dsc_2") else \
+                               3 if field_name.startswith("dsc_3") else \
+                               4 if field_name.startswith("mdc") else None
 
-                    # Create CoursePreference object
-                    preferences.append(
-                        CoursePreference(
-                            student=student,
-                            batch=batch,
-                            preference_number=preference_number,
-                            paper_no=paper_no
+                    if paper_no:
+                        preferences.append(
+                            CoursePreference(
+                                student=student,
+                                batch=batch,
+                                preference_number=preference_number,
+                                paper_no=paper_no
+                            )
                         )
-                    )
 
-            # Bulk create to optimize DB operations
+            # Bulk create preferences
             CoursePreference.objects.bulk_create(preferences)
 
             return redirect('view_preferences')  # Redirect after successful submission
@@ -161,7 +217,20 @@ def course_selection(request):
     else:
         form = CourseSelectionForm(student=student)
 
-    return render(request, 'student/course_selection.html', {'form': form, 'already_submitted': False})
+    # Debugging response
+    debug_info = {
+        "student": str(student),
+        "pathway": str(student.pathway),
+        "pathway_name": student.pathway.name if student.pathway else "None"
+    }
+    print("Debug Info:", debug_info)
+
+    return render(request, 'student/course_selection.html', {
+        'form': form,
+        'already_submitted': False,
+        'student': student  # Pass student explicitly
+    })
+
 
 
 def view_preferences(request):
@@ -364,3 +433,79 @@ def delete_batch(request, batch_id):
     batch = get_object_or_404(Batch, id=batch_id)
     batch.delete()
     return redirect('admin/view_batches')  # Redirect to the batches page after deletion
+
+
+def first_sem_allotment(request):
+    if CourseAllotment.objects.exists():  # If any allotments are found
+        return render(request, 'admin/first_sem_allotment.html', {'already_allocated': True})
+
+    if request.method == 'POST':
+        try:
+            allocate_courses()
+            messages.success(request, "Course allotment successful!")
+            CoursePreference.objects.all().delete()
+            return redirect('view_allotments')
+        except Exception as e:
+            messages.error(request, f"An error occurred during allotment: {e}")
+
+    return render(request, 'admin/first_sem_allotment.html', {'page_name': 'First Semester Allotment'})
+
+
+from django.shortcuts import render
+from .models import CourseAllotment
+
+def view_allotments(request):
+    allotments = CourseAllotment.objects.all()
+
+    student_allotments = {}
+    for allotment in allotments:
+        student = allotment.student
+        if student not in student_allotments:
+            student_allotments[student] = {}
+        
+        paper_no = allotment.paper_no  # Get the paper number from the allotment
+        student_allotments[student][f'paper{paper_no}'] = allotment.batch.course.course_name
+
+    allotment_data = []
+    for student, papers in student_allotments.items():
+        allotment_data.append({
+            'admission_number': student.admission_number,
+            'name': student.name,
+            'department': student.department.name,
+            'pathway': student.pathway.name,
+            'paper1': papers.get('paper1'),
+            'paper2': papers.get('paper2'),
+            'paper3': papers.get('paper3'),
+            'paper4': papers.get('paper4'),
+        })
+
+    return render(request, 'admin/view_allotments.html', {'allotment_data': allotment_data, 'page_name': 'View Allotments'})
+
+
+@login_required
+def view_student_allotment(request):
+    try:
+        student = request.user.student  # Fetch student linked to the logged-in user
+    except AttributeError:
+        return render(request, 'error.html', {'message': 'Student profile not found'})
+
+    # Fetch all allotments for the student
+    allotments = CourseAllotment.objects.filter(student=student)
+
+    if not allotments.exists():
+        return render(request, 'error.html', {'message': 'No allotment records found'})
+
+    # Structure data for display
+    allotted_courses = []
+    for allotment in allotments:
+        course = allotment.batch.course
+        allotted_courses.append({
+            'paper_no': allotment.paper_no,
+            'course_name': course.course_name,
+            'department': course.department.name
+        })
+
+    return render(request, 'student/view_allotment.html', {
+        'student': student,
+        'allotted_courses': allotted_courses
+    })

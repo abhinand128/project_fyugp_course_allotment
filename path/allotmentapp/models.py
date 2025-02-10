@@ -98,6 +98,7 @@ class CoursePreference(models.Model):
 class CourseAllotment(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
+    paper_no = models.PositiveIntegerField(default=1)  # Add paper_no field
 
     def __str__(self):
-        return f"{self.student.name} - {self.batch}"
+        return f"{self.student.name} - {self.batch} - Paper {self.paper_no}"  # Include paper_no in __str__

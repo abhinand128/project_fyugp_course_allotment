@@ -1,0 +1,29 @@
+{% extends 'admin_base.html' %}
+
+{% block title %}First Semester Allotment{% endblock %}
+
+{% block content %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        {% if already_allocated %}
+        alert("Already allocated. Redirecting to view allotments.");
+        window.location.href = "{% url 'view_allotments' %}";
+        {% endif %}
+    });
+</script>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit">Allocate</button>
+</form>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<style>
+    /* ... (Your CSS styles) ... */
+</style>
+{% endblock %}

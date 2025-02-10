@@ -1,0 +1,47 @@
+{% extends 'student_base.html' %}
+
+{% block title %}Allotment Result{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Allotment Result</h2>
+
+    <div class="card shadow-lg p-4">
+        <h4>Student Information</h4>
+        <p><strong>Name:</strong> {{ student.name }}</p>
+        <p><strong>Admission Number:</strong> {{ student.admission_number }}</p>
+        <p><strong>Department:</strong> {{ student.department.name }}</p>
+        <p><strong>Pathway:</strong> {{ student.pathway.name }}</p>
+
+        <h4 class="mt-4">Allotted Courses</h4>
+        <table class="table table-bordered">
+            <thead class="table-primary">
+                <tr>
+                    <th>Paper No</th>
+                    <th>Course Name</th>
+                    <th>Department</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in allotted_courses %}
+                <tr>
+                    <td>
+                        Paper {{ course.paper_no }} 
+                        {% if course.paper_no == 1 %}(DSC 1){% endif %}
+                        {% if course.paper_no == 2 %}(DSC 2){% endif %}
+                        {% if course.paper_no == 3 %}(DSC 3){% endif %}
+                        {% if course.paper_no == 4 %}(MDC){% endif %}
+                    </td>
+                    <td>{{ course.course_name }}</td>
+                    <td>{{ course.department }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'student_dashboard' %}" class="btn btn-primary">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
