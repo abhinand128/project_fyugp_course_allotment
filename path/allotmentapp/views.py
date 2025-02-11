@@ -256,6 +256,77 @@ def view_preferences(request):
         'categorized_preferences': categorized_preferences
     })
 
+def edit_preferences(request):
+    try:
+        student = Student.objects.select_related('pathway', 'department').get(user=request.user)
+    except Student.DoesNotExist:
+        return render(request, 'error.html', {'message': 'Student not found'})
+
+    # Fetch existing preferences
+    existing_preferences = CoursePreference.objects.filter(student=student).order_by('paper_no', 'preference_number')
+
+    if not existing_preferences.exists():
+        return redirect('course_selection')  # Redirect if no preferences exist
+
+    if request.method == 'POST':
+        form = CourseSelectionForm(request.POST, student=student)
+        if form.is_valid():
+            # Clear old preferences
+            CoursePreference.objects.filter(student=student).delete()
+
+            # Save new preferences
+            preferences = []
+            preferences.append(CoursePreference(
+                student=student,
+                batch=form.cleaned_data["dsc_1"],
+                preference_number=1,
+                paper_no=1
+            ))
+
+            for field_name, batch in form.cleaned_data.items():
+                if "option" in field_name or field_name.startswith("mdc"):
+                    preference_number = int(field_name.split("_")[-1])
+                    paper_no = (
+                        2 if field_name.startswith("dsc_2") else
+                        3 if field_name.startswith("dsc_3") else
+                        4 if field_name.startswith("mdc") else None
+                    )
+
+                    if paper_no:
+                        preferences.append(
+                            CoursePreference(
+                                student=student,
+                                batch=batch,
+                                preference_number=preference_number,
+                                paper_no=paper_no
+                            )
+                        )
+
+            CoursePreference.objects.bulk_create(preferences)
+
+            return redirect('view_preferences')
+
+    else:
+        # Pre-fill form with existing selections
+        initial_data = {}
+        for pref in existing_preferences:
+            field_name = (
+                "dsc_1" if pref.paper_no == 1 else
+                f"dsc_2_option_{pref.preference_number}" if pref.paper_no == 2 else
+                f"dsc_3_option_{pref.preference_number}" if pref.paper_no == 3 else
+                f"mdc_option_{pref.preference_number}" if pref.paper_no == 4 else None
+            )
+
+            if field_name:
+                initial_data[field_name] = pref.batch
+
+        form = CourseSelectionForm(student=student, initial=initial_data)
+
+    return render(request, 'student/edit_preferences.html', {
+        'form': form,
+        'student': student
+    })
+
 
 def manage_courses(request):
     """Render the manage courses page."""
@@ -493,7 +564,10 @@ def view_student_allotment(request):
     allotments = CourseAllotment.objects.filter(student=student)
 
     if not allotments.exists():
-        return render(request, 'error.html', {'message': 'No allotment records found'})
+        return render(request, 'student/view_allotment.html', {
+            'student': student,
+            'allotment_published': False  # Flag to indicate no allotments found
+        })
 
     # Structure data for display
     allotted_courses = []
@@ -507,5 +581,6 @@ def view_student_allotment(request):
 
     return render(request, 'student/view_allotment.html', {
         'student': student,
+        'allotment_published': True,  # Flag to indicate allotment exists
         'allotted_courses': allotted_courses
     })

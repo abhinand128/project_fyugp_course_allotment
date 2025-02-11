@@ -1,50 +1,30 @@
 {% extends 'student_base.html' %}
 
-{% block title %}Course Selection{% endblock %}
+{% block title %}Edit Preferences{% endblock %}
 
 {% block content %}
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        {% if already_allocated %}
-            alert("You have already been allocated courses. You cannot submit preferences again.");
-            window.location.replace("{% url 'view_student_allotment' %}"); // Prevent back navigation
-        {% elif already_submitted %}
-            alert("You have already submitted your preferences.");
-            window.location.replace("{% url 'view_preferences' %}");
-        {% endif %}
-    });
-</script>
-
-
 <div class="container mt-5">
-    <h2 class="text-center mb-4">Course Selection</h2>
+    <h2 class="text-center mb-4">Edit Course Preferences</h2>
     <div class="card shadow-lg p-4">
-        {% if not already_submitted %}
         <form method="post">
             {% csrf_token %}
 
-            <!-- DSC 1 (Major) -->
             <h3>Student Info</h3>
-            <p>Name: {{ student.name }}</p>
-            <p>Department: {{ student.department }}</p>
-            <p>Pathway: {{ student.pathway }}</p>
-            
-            
+            <p><strong>Name:</strong> {{ student.name }}</p>
+            <p><strong>Department:</strong> {{ student.department }}</p>
+            <p><strong>Pathway:</strong> {{ student.pathway }}</p>
+
+            <!-- DSC 1 -->
             <div class="p-3 mb-3 rounded" style="background-color: #d1e7dd;">
                 <h3 class="text-center fw-bold">Select Paper 1 (Major - DSC 1)</h3>
-
                 <div class="option-box">
                     <label for="{{ form.dsc_1.id_for_label }}">Option 1</label>
                     {{ form.dsc_1 }}
                 </div>
-
-                {% if form.dsc_1.errors %}
-                <div class="text-danger small">{{ form.dsc_1.errors|join:", " }}</div>
-                {% endif %}
             </div>
 
             <!-- DSC 2 -->
-            <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #cfe2ff;">
+            <div class="p-3 mb-3 rounded text-center" style="background-color: #cfe2ff;">
                 <h3>Select Paper 2 (Minor - DSC 2)</h3>
                 <div class="options-container">
                     {% for field in form %}
@@ -52,9 +32,6 @@
                     <div class="option-box">
                         <label>{{ field.label }}</label>
                         {{ field }}
-                        {% if field.errors %}
-                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
-                        {% endif %}
                     </div>
                     {% endif %}
                     {% endfor %}
@@ -62,11 +39,8 @@
             </div>
 
             <!-- DSC 3 -->
-            <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #f8d7da;">
+            <div class="p-3 mb-3 rounded text-center" style="background-color: #f8d7da;">
                 <h3>
-                    
-
-
                     {% if student.pathway.name == "Double Major" %}
                     Select Paper 3 (Second Major - DSC 3)
                     {% else %}
@@ -79,18 +53,14 @@
                     <div class="option-box">
                         <label>{{ field.label }}</label>
                         {{ field }}
-                        {% if field.errors %}
-                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
-                        {% endif %}
                     </div>
                     {% endif %}
                     {% endfor %}
                 </div>
             </div>
 
-
             <!-- MDC -->
-            <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #fff3cd;">
+            <div class="p-3 mb-3 rounded text-center" style="background-color: #fff3cd;">
                 <h3>Select Paper 4 (MDC)</h3>
                 <div class="options-container">
                     {% for field in form %}
@@ -98,9 +68,6 @@
                     <div class="option-box">
                         <label>{{ field.label }}</label>
                         {{ field }}
-                        {% if field.errors %}
-                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
-                        {% endif %}
                     </div>
                     {% endif %}
                     {% endfor %}
@@ -108,53 +75,13 @@
             </div>
 
             <div class="text-center mt-4">
-                <button type="submit" class="btn btn-primary btn-lg">Submit</button>
+                <button type="submit" class="btn btn-success btn-lg">Update Preferences</button>
             </div>
         </form>
-        {% else %}
-        <div class="text-center mt-4">
-            <a href="{% url 'view_preferences' %}" class="btn btn-primary btn-lg">View Preferences</a>
-        </div>
-        {% endif %}
     </div>
 </div>
-<style>
-    /* Ensure consistent dropdown size */
-    select {
-        width: 100%;
-        /* Make all dropdowns take full width */
-        padding: 8px;
-        border-radius: 5px;
-        border: 1px solid #ced4da;
-        background-color: white;
-    }
 
-    /* Align labels properly */
-    .option-box {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        margin-bottom: 10px;
-    }
-
-    .option-box label {
-        font-weight: bold;
-        min-width: 120px;
-        text-align: right;
-    }
-
-    /* Responsive Fix: Stack labels on small screens */
-    @media (max-width: 768px) {
-        .option-box {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .option-box label {
-            text-align: left;
-        }
-    }
-</style>
+<!-- Disable duplicate selections -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const selects = document.querySelectorAll("select");
@@ -162,14 +89,12 @@
         function updateDropdowns() {
             let selectedValues = new Set();
 
-            // Collect all selected values
             selects.forEach(select => {
                 if (select.value) {
                     selectedValues.add(select.value);
                 }
             });
 
-            // Update all dropdowns
             selects.forEach(select => {
                 let currentValue = select.value;
                 Array.from(select.options).forEach(option => {
@@ -184,11 +109,41 @@
             select.addEventListener("change", updateDropdowns);
         });
 
-        updateDropdowns(); // Run initially to disable pre-selected values
+        updateDropdowns();
     });
 </script>
 
+<style>
+    select {
+        width: 100%;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        background-color: white;
+    }
 
+    .option-box {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 10px;
+    }
 
+    .option-box label {
+        font-weight: bold;
+        min-width: 120px;
+        text-align: right;
+    }
 
+    @media (max-width: 768px) {
+        .option-box {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .option-box label {
+            text-align: left;
+        }
+    }
+</style>
 {% endblock %}

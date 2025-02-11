@@ -13,31 +13,39 @@
         <p><strong>Department:</strong> {{ student.department.name }}</p>
         <p><strong>Pathway:</strong> {{ student.pathway.name }}</p>
 
-        <h4 class="mt-4">Allotted Courses</h4>
-        <table class="table table-bordered">
-            <thead class="table-primary">
-                <tr>
-                    <th>Paper No</th>
-                    <th>Course Name</th>
-                    <th>Department</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for course in allotted_courses %}
-                <tr>
-                    <td>
-                        Paper {{ course.paper_no }} 
-                        {% if course.paper_no == 1 %}(DSC 1){% endif %}
-                        {% if course.paper_no == 2 %}(DSC 2){% endif %}
-                        {% if course.paper_no == 3 %}(DSC 3){% endif %}
-                        {% if course.paper_no == 4 %}(MDC){% endif %}
-                    </td>
-                    <td>{{ course.course_name }}</td>
-                    <td>{{ course.department }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        {% if allotment_published %}
+            <h4 class="mt-4">Allotted Courses</h4>
+            <table class="table table-bordered">
+                <thead class="table-primary">
+                    <tr>
+                        <th>Paper No</th>
+                        <th>Course Name</th>
+                        <th>Department</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in allotted_courses %}
+                    <tr>
+                        <td>
+                            Paper {{ course.paper_no }} 
+                            {% if course.paper_no == 1 %}(DSC 1){% endif %}
+                            {% if course.paper_no == 2 %}(DSC 2){% endif %}
+                            {% if course.paper_no == 3 %}(DSC 3){% endif %}
+                            {% if course.paper_no == 4 %}(MDC){% endif %}
+                        </td>
+                        <td>{{ course.course_name }}</td>
+                        <td>{{ course.department }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <!-- JavaScript Alert for No Allotment -->
+            <script>
+                alert("🚨 Allotment not published yet. You will be redirected to the dashboard.");
+                window.location.href = "{% url 'student_dashboard' %}"; // Redirect after alert is closed
+            </script>
+        {% endif %}
 
         <div class="text-center mt-4">
             <a href="{% url 'student_dashboard' %}" class="btn btn-primary">Back to Dashboard</a>

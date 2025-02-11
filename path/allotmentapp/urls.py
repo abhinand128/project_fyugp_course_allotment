@@ -10,6 +10,8 @@ urlpatterns = [
     path("view_courses_std/", views.view_courses_student, name="view_courses_student"),
     path('course_selection/',views.course_selection, name='course_selection'),
     path('view_preferences/', views.view_preferences, name='view_preferences'),
+    path('edit_preferences/', views.edit_preferences, name='edit_preferences'),
+
     path('logout/',views.student_logout, name='logout'),
     path('logout/',views.admin_logout, name='admin_logout'),
     path('view_courses/', views.view_courses, name='view_courses'),
