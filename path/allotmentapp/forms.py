@@ -54,7 +54,7 @@ class CourseSelectionForm(forms.Form):
 
             else:  # Single Major with Single/Double Minor
                 dsc_1_batches = dsc_batches.filter(course__department=student.department)
-                dsc_2_batches = dsc_batches.exclude(cou8000rse__department=student.department)
+                dsc_2_batches = dsc_batches.exclude(course__department=student.department)
                 dsc_3_batches = dsc_batches.exclude(course__department=student.department)
                 mdc_filtered_batches = mdc_batches.exclude(course__department=student.department)
 
