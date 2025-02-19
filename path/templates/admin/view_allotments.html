@@ -3,38 +3,95 @@
 {% block title %}View Allotments{% endblock %}
 
 {% block content %}
-<h1>Course Allotments</h1>
+<div class="container my-5">
 
-{% if allotment_data %}
-<table class="table table-bordered table-hover">  <thead>
-        <tr>
-            <th>Admission Number</th>
-            <th>Name</th>
-            <th>Department</th>
-            <th>Pathway</th>
-            <th>Paper 1 (DSC1)</th>
-            <th>Paper 2 (DSC3)</th>
-            <th>Paper 3 (DSC3)</th>
-            <th>Paper 4 (MDC)</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for allotment in allotment_data %}
-        <tr>
-            <td>{{ allotment.admission_number }}</td>
-            <td>{{ allotment.name }}</td>
-            <td>{{ allotment.department }}</td>
-            <td>{{ allotment.pathway }}</td>
-            <td>{{ allotment.paper1 }}</td>
-            <td>{{ allotment.paper2 }}</td>
-            <td>{{ allotment.paper3 }}</td>
-            <td>{{ allotment.paper4 }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p>No allotments found.</p>
-{% endif %}
+    <!-- Buttons Row -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <!-- Search Bar (Left) -->
+        <input type="text" id="tableSearch" class="form-control w-25" placeholder="Search...">
+
+        <!-- Download Button (Right) -->
+        <a href="?download=true" class="btn btn-success">
+            <i class="fas fa-download"></i> Download
+        </a>
+    </div>
+
+    {% if allotment_data %}
+    <div class="card shadow p-3">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mt-3" id="allotmentTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Admission Number</th>
+                        <th>Name</th>
+                        <th onclick="sortTable(2)">
+                            Department <i class="fas fa-sort"></i>
+                        </th>
+                        <th onclick="sortTable(3)">
+                            Admission Category <i class="fas fa-sort"></i>
+                        </th>
+                        <th onclick="sortTable(4)">
+                            Pathway <i class="fas fa-sort"></i>
+                        </th>
+                        <th>Paper 1(DSC 1)</th>
+                        <th>Paper 2(DSC 2)</th>
+                        <th>Paper 3(DSC 3)</th>
+                        <th>Paper 4 (MDC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for allotment in allotment_data %}
+                    <tr>
+                        <td>{{ allotment.admission_number }}</td>
+                        <td>{{ allotment.name }}</td>
+                        <td>{{ allotment.department }}</td>
+                        <td>{{ allotment.admission_category }}</td>  <!-- Removed Badge -->
+                        <td>{{ allotment.pathway }}</td>
+                        <td>{{ allotment.paper1 }}</td>
+                        <td>{{ allotment.paper2 }}</td>
+                        <td>{{ allotment.paper3 }}</td>
+                        <td>{{ allotment.paper4 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center">No allotments found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-center text-danger">No allotments found.</p>
+    {% endif %}
+</div>
+
+<!-- JavaScript for Search & Sorting -->
+<script>
+document.getElementById("tableSearch").addEventListener("keyup", function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#allotmentTable tbody tr");
+
+    rows.forEach(row => {
+        let text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+    });
+});
+
+function sortTable(n) {
+    let table = document.getElementById("allotmentTable");
+    let rows = Array.from(table.rows).slice(1);
+    let ascending = table.rows[0].cells[n].classList.toggle("asc");
+
+    rows.sort((rowA, rowB) => {
+        let cellA = rowA.cells[n].textContent.trim();
+        let cellB = rowB.cells[n].textContent.trim();
+
+        return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+    });
+
+    rows.forEach(row => table.appendChild(row));
+}
+</script>
 
 {% endblock %}

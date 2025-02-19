@@ -37,15 +37,17 @@ class Student(models.Model):
 
     def save(self, *args, **kwargs):
         """Auto-create a Django user when saving a new student."""
+        username = self.admission_number  # Ensure username is always set
+        password = self.dob.strftime('%d/%m/%y')  # Format DOB as DD/MM/YY
+
         if not self.user:
-            username = self.admission_number
-            password = self.dob.strftime('%d/%m/%y')  # Format DOB as DD/MM/YY
-        
         # Ensure username is unique before creating the user
-        if not User.objects.filter(username=username).exists():
-            user = User.objects.create_user(username=username, password=password, email=self.email)
-            self.user = user
+            if not User.objects.filter(username=username).exists():
+                user = User.objects.create_user(username=username, password=password, email=self.email)
+                self.user = user
+
         super().save(*args, **kwargs)
+
 
     def __str__(self):
         return f"{self.admission_number} - {self.name}"

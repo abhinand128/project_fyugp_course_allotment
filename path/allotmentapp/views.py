@@ -7,40 +7,132 @@ from .models import Student,Course,CoursePreference,Batch,CourseAllotment
 from .forms import StudentForm,CourseFilterForm,CourseSelectionForm,CourseForm,BatchForm,BatchFilterForm
 from django.db import transaction
 
+# def allocate_courses():
+#     with transaction.atomic():
+#         # 1. Allocate Paper 1:
+#         for student in Student.objects.all():
+#             allocated = False
+#             preferences = CoursePreference.objects.filter(student=student, paper_no=1).order_by('preference_number')
+#             for preference in preferences:
+#                 batch = preference.batch
+#                 if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
+#                     CourseAllotment.objects.create(student=student, batch=batch, paper_no=1)  # paper_no = 1
+#                     allocated = True
+#                     break
+
+#             if not allocated:
+#                 print(f"Warning: Student {student.admission_number} could not be allocated Paper 1. All preferences full.")
+#                 # Add default allocation logic here if needed (see previous examples)
+
+#         # 2. Allocate remaining papers (2, 3, 4...):
+#         for paper_no in range(2, 5):
+#             students = Student.objects.order_by('-normalized_marks')
+#             for student in students:
+#                 allocated = False
+#                 allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
+#                 preferences = CoursePreference.objects.filter(student=student, paper_no=paper_no).exclude(batch__in=allotted_batches).order_by('preference_number')
+#                 for preference in preferences:
+#                     batch = preference.batch
+#                     if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
+#                         CourseAllotment.objects.create(student=student, batch=batch, paper_no=paper_no)  # Save paper_no
+#                         allocated = True
+#                         break
+
+#                 if not allocated:
+#                     print(f"Warning: Student {student.admission_number} could not be allocated Paper {paper_no}. All preferences full.")
+#                     # Add default allocation logic here if needed (see previous examples)
+
 def allocate_courses():
     with transaction.atomic():
-        # 1. Allocate Paper 1:
+        # 1. Allocate Paper 1
         for student in Student.objects.all():
             allocated = False
             preferences = CoursePreference.objects.filter(student=student, paper_no=1).order_by('preference_number')
             for preference in preferences:
                 batch = preference.batch
                 if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-                    CourseAllotment.objects.create(student=student, batch=batch, paper_no=1)  # paper_no = 1
+                    CourseAllotment.objects.create(student=student, batch=batch, paper_no=1)
                     allocated = True
                     break
 
             if not allocated:
                 print(f"Warning: Student {student.admission_number} could not be allocated Paper 1. All preferences full.")
-                # Add default allocation logic here if needed (see previous examples)
 
-        # 2. Allocate remaining papers (2, 3, 4...):
-        for paper_no in range(2, 5):
+        # 2. Allocate Papers 2 & 3 Normally
+        for paper_no in range(2, 4):
             students = Student.objects.order_by('-normalized_marks')
             for student in students:
                 allocated = False
                 allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
                 preferences = CoursePreference.objects.filter(student=student, paper_no=paper_no).exclude(batch__in=allotted_batches).order_by('preference_number')
+
                 for preference in preferences:
                     batch = preference.batch
                     if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-                        CourseAllotment.objects.create(student=student, batch=batch, paper_no=paper_no)  # Save paper_no
+                        CourseAllotment.objects.create(student=student, batch=batch, paper_no=paper_no)
                         allocated = True
                         break
 
                 if not allocated:
                     print(f"Warning: Student {student.admission_number} could not be allocated Paper {paper_no}. All preferences full.")
-                    # Add default allocation logic here if needed (see previous examples)
+
+        # 3. Allocate Paper 4 with Department & Category Quota
+        department_strengths = {
+            "Economics": 48, "History": 48, "Malayalam": 36, "Commerce": 55, "Physics": 43,
+            "Chemistry": 29, "Zoology": 29, "Botany": 29, "Statistics": 29
+        }
+        department_quota = {dept: max(1, round(strength * 0.2)) for dept, strength in department_strengths.items()}
+
+        all_general_students = list(Student.objects.filter(admission_category="General").order_by('-normalized_marks'))  # Backup general students
+
+        for department, total_dept_quota in department_quota.items():
+            # Calculate category-based quota within the department
+            general_quota = max(1, round(total_dept_quota * 0.6))  # 60% for General
+            sc_st_quota = max(1, round(total_dept_quota * 0.2))  # 20% for SC/ST
+            other_quota = max(1, round(total_dept_quota * 0.2))  # 20% for Management/Sports/EWS
+
+            # Select students within each category
+            general_students = list(Student.objects.filter(department__name=department, admission_category="General").order_by('-normalized_marks')[:general_quota])
+            sc_st_students = list(Student.objects.filter(department__name=department, admission_category__in=["SC", "ST"]).order_by('-normalized_marks')[:sc_st_quota])
+            other_students = list(Student.objects.filter(department__name=department, admission_category__in=["EWS", "Sports", "Management"]).order_by('-normalized_marks')[:other_quota])
+
+            # Backup list of general students from the same department
+            available_general_in_department = list(Student.objects.filter(department__name=department, admission_category="General").order_by('-normalized_marks'))
+
+            # Fill remaining quotas if categories have insufficient students (First try from the same department)
+            while len(sc_st_students) < sc_st_quota and available_general_in_department:
+                sc_st_students.append(available_general_in_department.pop(0))  # Take from same department General
+
+            while len(other_students) < other_quota and available_general_in_department:
+                other_students.append(available_general_in_department.pop(0))  # Take from same department General
+
+            # If the department still lacks enough students, take General students from other departments
+            while len(sc_st_students) < sc_st_quota and all_general_students:
+                sc_st_students.append(all_general_students.pop(0))
+
+            while len(other_students) < other_quota and all_general_students:
+                other_students.append(all_general_students.pop(0))
+
+            while len(general_students) < general_quota and all_general_students:
+                general_students.append(all_general_students.pop(0))
+
+            selected_students = general_students + sc_st_students + other_students
+
+            # Allocate courses for Paper 4
+            for student in selected_students:
+                allocated = False
+                allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
+                preferences = CoursePreference.objects.filter(student=student, paper_no=4).exclude(batch__in=allotted_batches).order_by('preference_number')
+
+                for preference in preferences:
+                    batch = preference.batch
+                    if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
+                        CourseAllotment.objects.create(student=student, batch=batch, paper_no=4)
+                        allocated = True
+                        break
+
+                if not allocated:
+                    print(f"Warning: Student {student.admission_number} could not be allocated Paper 4. All preferences full.")
 
 
     
@@ -522,10 +614,15 @@ def first_sem_allotment(request):
     return render(request, 'admin/first_sem_allotment.html', {'page_name': 'First Semester Allotment'})
 
 
+import csv
+from django.http import HttpResponse
 from django.shortcuts import render
 from .models import CourseAllotment
 
 def view_allotments(request):
+    if "download" in request.GET:  # Check if download request is made
+        return download_allotments_csv()
+
     allotments = CourseAllotment.objects.all()
 
     student_allotments = {}
@@ -533,8 +630,8 @@ def view_allotments(request):
         student = allotment.student
         if student not in student_allotments:
             student_allotments[student] = {}
-        
-        paper_no = allotment.paper_no  # Get the paper number from the allotment
+
+        paper_no = allotment.paper_no  
         student_allotments[student][f'paper{paper_no}'] = allotment.batch.course.course_name
 
     allotment_data = []
@@ -543,15 +640,53 @@ def view_allotments(request):
             'admission_number': student.admission_number,
             'name': student.name,
             'department': student.department.name,
+            'admission_category': student.admission_category,
             'pathway': student.pathway.name,
-            'paper1': papers.get('paper1'),
-            'paper2': papers.get('paper2'),
-            'paper3': papers.get('paper3'),
-            'paper4': papers.get('paper4'),
+            'paper1': papers.get('paper1', ''),
+            'paper2': papers.get('paper2', ''),
+            'paper3': papers.get('paper3', ''),
+            'paper4': papers.get('paper4', ''),
         })
 
     return render(request, 'admin/view_allotments.html', {'allotment_data': allotment_data, 'page_name': 'View Allotments'})
 
+def download_allotments_csv():
+    allotments = CourseAllotment.objects.all()
+
+    # Organizing allotment data
+    student_allotments = {}
+    for allotment in allotments:
+        student = allotment.student
+        if student not in student_allotments:
+            student_allotments[student] = {
+                'admission_number': student.admission_number,
+                'name': student.name,
+                'department': student.department.name,
+                'admission_category': student.admission_category,
+                'pathway': student.pathway.name,
+                'paper1': '',
+                'paper2': '',
+                'paper3': '',
+                'paper4': ''
+            }
+        
+        paper_no = allotment.paper_no
+        student_allotments[student][f'paper{paper_no}'] = allotment.batch.course.course_name
+
+    # Generate CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="allotments.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Admission Number', 'Name', 'Department', 'Admission Category', 'Pathway', 'Paper 1 (DSC 1)', 'Paper 2 (DSC 2)', 'Paper 3 (DSC 3)', 'Paper 4 (MDC)'])
+
+    for student, data in student_allotments.items():
+        writer.writerow([
+            data['admission_number'], data['name'], data['department'], data['admission_category'],
+            data['pathway'], data['paper1'], data['paper2'], data['paper3'], data['paper4']
+        ])
+
+    return response
 
 @login_required
 def view_student_allotment(request):
