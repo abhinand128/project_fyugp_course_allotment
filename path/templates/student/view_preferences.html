@@ -10,11 +10,20 @@
         {% for paper_no, preferences in categorized_preferences.items %}
             {% if preferences %}
                 <h4 class="mt-4 text-black fw-semibold">
-                    {% if paper_no == 1 %} Major Course (DSC 1)
-                    {% elif paper_no == 2 %} Minor Courses (DSC 2)
-                    {% elif paper_no == 3 %} Minor Courses (DSC 3)
-                    {% elif paper_no == 4 %} MDC Course
-                    {% else %} Paper {{ paper_no }} 
+                    {% if student.current_sem == 1 %}
+                        {% if paper_no == 1 %} Major Course (DSC 1)
+                        {% elif paper_no == 2 %} Minor Courses (DSC 2)
+                        {% elif paper_no == 3 %} Minor Courses (DSC 3)
+                        {% elif paper_no == 4 %} MDC Course
+                        {% else %} Paper {{ paper_no }} 
+                        {% endif %}
+                    {% elif student.current_sem == 2 %}
+                        {% if paper_no == 1 %} Major Course (DSC 4)
+                        {% elif paper_no == 2 %} Minor Courses (DSC 5)
+                        {% elif paper_no == 3 %} Minor Courses (DSC 6)
+                        {% elif paper_no == 4 %} MDC Course
+                        {% else %} Paper {{ paper_no }} 
+                        {% endif %}
                     {% endif %}
                 </h4>
                 <table class="table table-bordered table-striped shadow">

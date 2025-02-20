@@ -7,7 +7,7 @@
     document.addEventListener("DOMContentLoaded", function () {
         {% if already_allocated %}
         alert("Already allocated. Redirecting to view allotments.");
-        window.location.href = "{% url 'view_first_sem_allotments' %}";
+        window.location.href = "{% url 'view_second_sem_allotments' %}";
         {% endif %}
     });
 </script>

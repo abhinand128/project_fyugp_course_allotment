@@ -28,7 +28,10 @@ urlpatterns = [
     path('delete_batch/<int:batch_id>/', views.delete_batch, name='delete_batch'),
      path('manage_allotment/', views.manage_allotment, name='manage_allotment'),
     path('first_sem_allotment/', views.first_sem_allotment, name='first_sem_allotment'),
-    path('view_allotments/', views.view_allotments, name='view_allotments'),
+    path('second_sem_allotment/', views.second_sem_allotment, name='second_sem_allotment'),
+    path('view_first_sem_allotments/', views.view_first_sem_allotments, name='view_first_sem_allotments'),
+    path('view_second_sem_allotments/', views.view_second_sem_allotments, name='view_second_sem_allotments'),
+
     path('view-allotment/', views.view_student_allotment, name='view_student_allotment'),
 
 
