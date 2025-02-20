@@ -205,7 +205,7 @@
                     <i class="lni lni-grid-alt"></i>
                 </button>
                 <div class="sidebar-logo">
-                    <a href="#">PATH Admin</a>
+                    <a href="#">PATH</a>
                 </div>
             </div>
             <ul class="sidebar-nav">
@@ -216,41 +216,18 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
-                        data-bs-target="#courses" aria-expanded="false" aria-controls="courses">
+                    <a href="{% url 'manage_courses' %}" class="sidebar-link">
                         <i class="lni lni-book"></i>
-                        <span>Courses</span>
+                        <span>Manage Courses</span>
                     </a>
-                    <ul id="courses" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-                        <li class="sidebar-item">
-                            <a href="{% url 'view_courses' %}" class="sidebar-link">View Courses</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="{% url 'add_course' %}" class="sidebar-link">Add Course</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="{% url 'edit_courses' %}" class="sidebar-link">Edite Course</a>
-                        </li>
-                    </ul>
                 </li>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
-                        data-bs-target="#batches" aria-expanded="false" aria-controls="batches">
+                    <a href="{% url 'edit_batches' %}" class="sidebar-link">
                         <i class="lni lni-graduation"></i>
-                        <span>Batches</span>
+                        <span>Manage batches</span>
                     </a>
-                    <ul id="batches" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-                        <li class="sidebar-item">
-                            <a href="{% url 'view_batches' %}" class="sidebar-link">View Batches</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="{% url 'create_batch' %}" class="sidebar-link">Add Batch</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="{% url 'edit_batches' %}" class="sidebar-link">Edit Batch</a>
-                        </li>
-                    </ul>
                 </li>
+                
                 <li class="sidebar-item">
                     <a href="{% url 'manage_allotment' %}" class="sidebar-link">
                         <i class="lni lni-cog"></i>
@@ -258,11 +235,21 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#students" aria-expanded="false" aria-controls="students">
                         <i class="lni lni-users"></i>
                         <span>Manage Students</span>
                     </a>
+                    <ul id="students" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="{% url 'student_list' %}" class="sidebar-link">View Students</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="{% url 'student_register' %}" class="sidebar-link">Add Student</a>
+                        </li>
+                    </ul>
                 </li>
+                
                 </ul>
                 
             <div class="sidebar-footer">

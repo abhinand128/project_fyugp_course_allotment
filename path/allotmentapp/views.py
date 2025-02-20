@@ -3,136 +3,15 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Student,Course,CoursePreference,Batch,CourseAllotment
-from .forms import StudentForm,CourseFilterForm,CourseSelectionFormSem1,CourseSelectionFormSem2,CourseForm,BatchForm,BatchFilterForm
+from .models import Student,Course,CoursePreference,Batch,CourseAllotment,Department,Pathway
+from .forms import StudentForm,CourseFilterForm,CourseSelectionFormSem1,CourseSelectionFormSem2,CourseForm,BatchForm,BatchFilterForm,BulkStudentUploadForm,StudentRegistrationForm,StudentEditForm
 from django.db import transaction
+from django.contrib.auth.models import User
+import csv
+from django.core.exceptions import ValidationError
+from datetime import datetime
 
-# def allocate_courses():
-#     with transaction.atomic():
-#         # 1. Allocate Paper 1:
-#         for student in Student.objects.all():
-#             allocated = False
-#             preferences = CoursePreference.objects.filter(student=student, paper_no=1).order_by('preference_number')
-#             for preference in preferences:
-#                 batch = preference.batch
-#                 if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-#                     CourseAllotment.objects.create(student=student, batch=batch, paper_no=1)  # paper_no = 1
-#                     allocated = True
-#                     break
 
-#             if not allocated:
-#                 print(f"Warning: Student {student.admission_number} could not be allocated Paper 1. All preferences full.")
-#                 # Add default allocation logic here if needed (see previous examples)
-
-#         # 2. Allocate remaining papers (2, 3, 4...):
-#         for paper_no in range(2, 5):
-#             students = Student.objects.order_by('-normalized_marks')
-#             for student in students:
-#                 allocated = False
-#                 allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
-#                 preferences = CoursePreference.objects.filter(student=student, paper_no=paper_no).exclude(batch__in=allotted_batches).order_by('preference_number')
-#                 for preference in preferences:
-#                     batch = preference.batch
-#                     if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-#                         CourseAllotment.objects.create(student=student, batch=batch, paper_no=paper_no)  # Save paper_no
-#                         allocated = True
-#                         break
-
-#                 if not allocated:
-#                     print(f"Warning: Student {student.admission_number} could not be allocated Paper {paper_no}. All preferences full.")
-#                     # Add default allocation logic here if needed (see previous examples)
-
-# def allocate_courses():
-#     with transaction.atomic():
-#         # 1. Allocate Paper 1
-#         for student in Student.objects.all():
-#             allocated = False
-#             preferences = CoursePreference.objects.filter(student=student, paper_no=1).order_by('preference_number')
-#             for preference in preferences:
-#                 batch = preference.batch
-#                 if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-#                     CourseAllotment.objects.create(student=student, batch=batch, paper_no=1)
-#                     allocated = True
-#                     break
-
-#             if not allocated:
-#                 print(f"Warning: Student {student.admission_number} could not be allocated Paper 1. All preferences full.")
-
-#         # 2. Allocate Papers 2 & 3 Normally
-#         for paper_no in range(2, 4):
-#             students = Student.objects.order_by('-normalized_marks')
-#             for student in students:
-#                 allocated = False
-#                 allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
-#                 preferences = CoursePreference.objects.filter(student=student, paper_no=paper_no).exclude(batch__in=allotted_batches).order_by('preference_number')
-
-#                 for preference in preferences:
-#                     batch = preference.batch
-#                     if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-#                         CourseAllotment.objects.create(student=student, batch=batch, paper_no=paper_no)
-#                         allocated = True
-#                         break
-
-#                 if not allocated:
-#                     print(f"Warning: Student {student.admission_number} could not be allocated Paper {paper_no}. All preferences full.")
-
-#         # 3. Allocate Paper 4 with Department & Category Quota
-#         department_strengths = {
-#             "Economics": 48, "History": 48, "Malayalam": 36, "Commerce": 55, "Physics": 43,
-#             "Chemistry": 29, "Zoology": 29, "Botany": 29, "Statistics": 29
-#         }
-#         department_quota = {dept: max(1, round(strength * 0.2)) for dept, strength in department_strengths.items()}
-
-#         all_general_students = list(Student.objects.filter(admission_category="General").order_by('-normalized_marks'))  # Backup general students
-
-#         for department, total_dept_quota in department_quota.items():
-#             # Calculate category-based quota within the department
-#             general_quota = max(1, round(total_dept_quota * 0.6))  # 60% for General
-#             sc_st_quota = max(1, round(total_dept_quota * 0.2))  # 20% for SC/ST
-#             other_quota = max(1, round(total_dept_quota * 0.2))  # 20% for Management/Sports/EWS
-
-#             # Select students within each category
-#             general_students = list(Student.objects.filter(department__name=department, admission_category="General").order_by('-normalized_marks')[:general_quota])
-#             sc_st_students = list(Student.objects.filter(department__name=department, admission_category__in=["SC", "ST"]).order_by('-normalized_marks')[:sc_st_quota])
-#             other_students = list(Student.objects.filter(department__name=department, admission_category__in=["EWS", "Sports", "Management"]).order_by('-normalized_marks')[:other_quota])
-
-#             # Backup list of general students from the same department
-#             available_general_in_department = list(Student.objects.filter(department__name=department, admission_category="General").order_by('-normalized_marks'))
-
-#             # Fill remaining quotas if categories have insufficient students (First try from the same department)
-#             while len(sc_st_students) < sc_st_quota and available_general_in_department:
-#                 sc_st_students.append(available_general_in_department.pop(0))  # Take from same department General
-
-#             while len(other_students) < other_quota and available_general_in_department:
-#                 other_students.append(available_general_in_department.pop(0))  # Take from same department General
-
-#             # If the department still lacks enough students, take General students from other departments
-#             while len(sc_st_students) < sc_st_quota and all_general_students:
-#                 sc_st_students.append(all_general_students.pop(0))
-
-#             while len(other_students) < other_quota and all_general_students:
-#                 other_students.append(all_general_students.pop(0))
-
-#             while len(general_students) < general_quota and all_general_students:
-#                 general_students.append(all_general_students.pop(0))
-
-#             selected_students = general_students + sc_st_students + other_students
-
-#             # Allocate courses for Paper 4
-#             for student in selected_students:
-#                 allocated = False
-#                 allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
-#                 preferences = CoursePreference.objects.filter(student=student, paper_no=4).exclude(batch__in=allotted_batches).order_by('preference_number')
-
-#                 for preference in preferences:
-#                     batch = preference.batch
-#                     if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-#                         CourseAllotment.objects.create(student=student, batch=batch, paper_no=4)
-#                         allocated = True
-#                         break
-
-#                 if not allocated:
-#                     print(f"Warning: Student {student.admission_number} could not be allocated Paper 4. All preferences full.")
 def allocate_courses(semester):
     with transaction.atomic():
         # 1. Allocate Paper 1 (DSC 1)
@@ -275,18 +154,18 @@ def student_login(request):
 def admin_dashboard(request):
     return render(request, 'admin/dashboard.html', {'page_name': 'Dashboard'})
 
-def add_student(request):
-    if request.method == "POST":
-        form = StudentForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Student added successfully!")
-            return redirect('student_list')  # Change this to your actual student listing URL
-        else:
-            messages.error(request, "Error adding student. Please check the form.")
-    else:
-        form = StudentForm()
-    return render(request, 'admin/add_student.html', {'form': form})
+# def add_student(request):
+#     if request.method == "POST":
+#         form = StudentForm(request.POST)
+#         if form.is_valid():
+#             form.save()
+#             messages.success(request, "Student added successfully!")
+#             return redirect('student_list')  # Change this to your actual student listing URL
+#         else:
+#             messages.error(request, "Error adding student. Please check the form.")
+#     else:
+#         form = StudentForm()
+#     return render(request, 'admin/add_student.html', {'form': form})
 
 def student_dashboard(request):
     # You can pass additional context like page_name if needed
@@ -329,85 +208,6 @@ from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from .models import CoursePreference, Student
 
-
-# def course_selection(request):
-#     try:
-#         student = Student.objects.select_related('pathway', 'department').get(user=request.user)
-#         print("Student Object:", student)
-#         print("Student Department:", student.department)
-#         print("Student Pathway:", student.pathway)
-#     except Student.DoesNotExist:
-#         print("No student found for admission number:", request.user.username)
-#         return render(request, 'error.html', {'message': 'Student not found'})
-
-#    # Check if preferences or allotment already exist
-#     existing_preferences = CoursePreference.objects.filter(student=student).exists()
-#     already_allocated = CourseAllotment.objects.filter(student=student).exists()
-
-#     if existing_preferences or already_allocated:
-#         return render(request, 'student/course_selection.html', {
-#             'view_preferences': True,
-#             'already_submitted': True,
-#             'already_allocated': already_allocated,
-#             'student': student  # Pass student explicitly
-#         })
-
-#     if request.method == 'POST':
-#         form = CourseSelectionFormSem1(request.POST, student=student)
-#         if form.is_valid():
-#             preferences = []
-
-#             # Handle DSC 1 separately
-#             preferences.append(
-#                 CoursePreference(
-#                     student=student,
-#                     batch=form.cleaned_data["dsc_1"],
-#                     preference_number=1,  # Always first preference
-#                     paper_no=1  # DSC 1
-#                 )
-#             )
-
-#             # Handle other DSC and MDC selections dynamically
-#             for field_name, batch in form.cleaned_data.items():
-#                 if "option" in field_name or field_name.startswith("mdc"):
-#                     preference_number = int(field_name.split("_")[-1])  # Extract preference number
-
-#                     # Determine paper_no
-#                     paper_no = 2 if field_name.startswith("dsc_2") else \
-#                                3 if field_name.startswith("dsc_3") else \
-#                                4 if field_name.startswith("mdc") else None
-
-#                     if paper_no:
-#                         preferences.append(
-#                             CoursePreference(
-#                                 student=student,
-#                                 batch=batch,
-#                                 preference_number=preference_number,
-#                                 paper_no=paper_no
-#                             )
-#                         )
-
-#             # Bulk create preferences
-#             CoursePreference.objects.bulk_create(preferences)
-
-#             return redirect('view_preferences')  # Redirect after successful submission
-
-#     else:
-#         form = CourseSelectionFormSem1(student=student)
-
-#     # Debugging response
-#     debug_info = {
-#         "student": str(student),
-#         "pathway": str(student.pathway),
-#         "pathway_name": student.pathway.name if student.pathway else "None"
-#     }
-#     print("Debug Info:", debug_info)
-
-#     return render(request, 'student/course_selection.html', {
-#         'form': form,
-#         'already_submitted': False,
-#         'student': student  # Pass student explicitly
-#     })
 
 def course_selection(request):
     try:
@@ -596,7 +396,7 @@ def view_courses(request):
     return render(request, 'admin/view_courses.html', context)
 
 
-def edit_courses(request):
+def manage_courses(request):
     """Display a list of courses with optional filters."""
     form = CourseFilterForm(request.GET)  # Initialize the filter form
     courses = Course.objects.all()
@@ -619,7 +419,7 @@ def edit_courses(request):
         'form': form,
         'page_name': 'Courses',  # Passed dynamically
     }
-    return render(request, 'admin/edit_courses.html', context)
+    return render(request, 'admin/manage_courses.html', context)
 
 def add_course(request):
     """Add a new course."""
@@ -627,7 +427,7 @@ def add_course(request):
         form = CourseForm(request.POST)  # Handle form submission
         if form.is_valid():
             form.save()
-            return redirect('view_courses')  # Redirect to the courses page
+            return redirect('manage_courses')  # Redirect to the courses page
     else:
         form = CourseForm()  # Create an empty form for GET request
 
@@ -640,7 +440,7 @@ def edit_course(request, course_id):
         form = CourseForm(request.POST, instance=course)
         if form.is_valid():
             form.save()
-            return redirect('view_courses')  # Redirect to the courses page
+            return redirect('manage_courses')  # Redirect to the courses page
     else:
         form = CourseForm(instance=course)  # Populate form with course data
 
@@ -655,7 +455,7 @@ def delete_course(request, course_id):
     """Delete a course."""
     course = get_object_or_404(Course, id=course_id)
     course.delete()  # Delete the course
-    return redirect('view_courses')  # Redirect to the courses page
+    return redirect('manage_courses')  # Redirect to the courses page
 
 def view_batches(request):
     """Display all batches."""
@@ -666,15 +466,11 @@ def manage_batches(request):
     """Render the manage batches page."""
     return render(request, 'admin/manage_batches.html')
 
-def edit_batches(request):
-    """Display all batches."""
-    batches = Batch.objects.all()
-    return render(request, 'admin/edit_batches.html', {'batches': batches})
 
 
 
 def create_batch(request):
-    courses = Course.objects.all()  # Default all courses
+    courses = Course.objects.all()  # Default to all courses
     filter_form = CourseFilterForm(request.GET or None)
 
     if filter_form.is_valid():
@@ -697,14 +493,27 @@ def create_batch(request):
             year = form.cleaned_data['year']
             part = form.cleaned_data['part']
 
+            duplicate_found = False  # Track if a duplicate batch exists
+
             if courses.exists():
                 for course in courses:
                     batch, created = Batch.objects.get_or_create(
                         course=course, year=year, part=part
                     )
 
-                messages.success(request, "Batch created successfully!")
-                return redirect('view_batches')  # Redirect to view batches
+                    if not created:  # If batch already exists
+                        duplicate_found = True
+
+                if duplicate_found:
+                    messages.error(request, "This batch already exists!")
+                    return render(request, 'admin/create_batch.html', {
+                        'form': form,
+                        'filter_form': filter_form,
+                        'courses': courses
+                    })
+
+                return redirect('view_batches')  # Redirect only when a new batch is created
+
             else:
                 messages.error(request, "No courses found for the given selection.")
 
@@ -720,29 +529,57 @@ def create_batch(request):
 
 
 
+
+
+
 def edit_batch(request, batch_id):
-    """Edit batch status (only status can be changed)."""
-    batch = get_object_or_404(Batch, id=batch_id)  
-    course = batch.course  # Get the single related course
+    """Edit a single batch status."""
+    batch = get_object_or_404(Batch, id=batch_id)
+    course = batch.course  # Get the related course
 
     if request.method == 'POST':
         status_value = request.POST.get('status')  # Get status from form
         batch.status = status_value == "True"  # Convert string to boolean
         batch.save()
-        return redirect('admin/view_batches')  # Redirect after successful update
+        messages.success(request, "Batch status updated successfully!")
+        return redirect('edit_batches')  # Redirect to batch list after update
 
     return render(request, 'admin/edit_batch.html', {
         'batch': batch,
-        'course': course  # Pass the single course
+        'course': course
     })
 
+def edit_batches(request):
+    """Allow both viewing and bulk updating of batches."""
+    if request.method == "POST":
+        batch_ids = request.POST.getlist("batch_ids")  # Get selected batch IDs
+        bulk_status = request.POST.get("bulk_status")  # Get selected status
 
+        if not batch_ids:
+            messages.warning(request, "No batches selected for update.")
+            return redirect("edit_batches")  # Redirect back to list view
+
+        if bulk_status not in ["True", "False"]:
+            messages.error(request, "Invalid status selected.")
+            return redirect("edit_batches")
+
+        # Convert status from string to boolean
+        status_value = bulk_status == "True"
+
+        # Bulk update selected batches
+        Batch.objects.filter(id__in=batch_ids).update(status=status_value)
+
+        messages.success(request, "Selected batches updated successfully.")
+        return redirect("edit_batches")
+
+    # Fetch all batches to display
+    batches = Batch.objects.all()
+    return render(request, "admin/edit_batches.html", {"batches": batches})
 def delete_batch(request, batch_id):
     """Delete a batch."""
     batch = get_object_or_404(Batch, id=batch_id)
     batch.delete()
     return redirect('admin/view_batches')  # Redirect to the batches page after deletion
-
 
 # def first_sem_allotment(request):
 #     if CourseAllotment.objects.exists():  # If any allotments are found
@@ -960,4 +797,174 @@ def view_student_allotment(request):
         'allotment_published': True,  # Flag to indicate allotment exists
         'allotted_courses': allotted_courses
     })
+    
+    
+def manage_students(request):
+    """Render the manage batches page."""
+    return render(request, 'admin/manage_students.html')
+
+def student_register(request):
+    if request.method == 'POST':
+        form = StudentRegistrationForm(request.POST)
+        
+        if form.is_valid():
+            student = form.save(commit=False)
+            username = student.admission_number.strip().lower()
+            password = student.dob.strftime('%d/%m/%y')
+
+            existing_user = User.objects.filter(username=username).first()
+            if existing_user is None:
+                user = User.objects.create_user(username=username, password=password, email=student.email)
+                student.user = user  
+                student.save()
+                messages.success(request, "Student successfully registered!")
+                return redirect('student_register')
+            else:
+                messages.error(request, "Student with this admission number already exists.")
+        else:
+            # ✅ Print form errors in the console for debugging
+            print("Form Errors:", form.errors)  
+            messages.error(request, "Invalid input. Please check your form.")
+    else:
+        form = StudentRegistrationForm()
+
+    return render(request, 'admin/student_register.html', {'form': form})
+
+def bulk_student_upload(request):
+    if request.method == "POST":
+        form = BulkStudentUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            csv_file = request.FILES["csv_file"]
+
+            if not csv_file.name.endswith(".csv"):
+                messages.error(request, "Please upload a valid CSV file.")
+                return redirect("bulk_student_upload")
+
+            try:
+                decoded_file = csv_file.read().decode("utf-8").splitlines()
+                reader = csv.DictReader(decoded_file)
+
+                students_to_create = []
+                users_to_create = []
+                existing_students = 0  # Counter for existing students
+                new_students = 0  # Counter for new students
+
+                for row in reader:
+                    admission_number = row.get("Admission Number")
+
+                    if Student.objects.filter(admission_number=admission_number).exists():
+                        existing_students += 1
+                        continue  # Skip existing students
+
+                    name = row.get("Name")
+                    dob_str = row.get("Date of Birth")  
+                    email = row.get("Email")
+                    department_name = row.get("Department")
+                    admission_category = row.get("Admission Category")
+                    pathway_name = row.get("Pathway")
+                    current_sem = row.get("Current Semester")
+                    normalized_marks = row.get("Marks")
+
+                    try:
+                        dob = datetime.strptime(dob_str, "%d/%m/%Y").date()  
+                        formatted_dob = dob.strftime("%d%m%Y")  
+                    except ValueError:
+                        messages.error(request, f"Invalid Date of Birth format: {dob_str}")
+                        return redirect("bulk_student_upload")
+
+                    try:
+                        department = Department.objects.get(name=department_name)
+                    except Department.DoesNotExist:
+                        messages.error(request, f"Department '{department_name}' not found.")
+                        return redirect("bulk_student_upload")
+
+                    try:
+                        pathway = Pathway.objects.get(name=pathway_name)
+                    except Pathway.DoesNotExist:
+                        messages.error(request, f"Pathway '{pathway_name}' not found.")
+                        return redirect("bulk_student_upload")
+
+                    user = None
+                    if not User.objects.filter(username=admission_number).exists():
+                        user = User(username=admission_number, email=email)
+                        user.set_password(formatted_dob)
+                        users_to_create.append(user)
+
+                    student = Student(
+                        admission_number=admission_number,
+                        name=name,
+                        dob=dob,
+                        email=email,
+                        department=department,
+                        admission_category=admission_category,
+                        pathway=pathway,
+                        current_sem=int(current_sem),
+                        normalized_marks=int(normalized_marks),
+                        user=user if user else None
+                    )
+                    students_to_create.append(student)
+                    new_students += 1  
+
+                if users_to_create:
+                    User.objects.bulk_create(users_to_create)
+
+                for student in students_to_create:
+                    student.user = User.objects.get(username=student.admission_number)
+
+                if students_to_create:
+                    Student.objects.bulk_create(students_to_create)
+
+                # Show appropriate success message
+                if new_students > 0:
+                    messages.success(request, f"{new_students} students uploaded successfully!")
+                if existing_students > 0 and new_students == 0:
+                    messages.warning(request, "All students already exist. No new students uploaded.")
+
+                return redirect("bulk_student_upload")
+
+            except Exception as e:
+                messages.error(request, f"Error processing file: {str(e)}")
+                return redirect("bulk_student_upload")
+
+    else:
+        form = BulkStudentUploadForm()
+
+    return render(request, "admin/bulk_student_upload.html", {"form": form})
+
+
+def student_list(request):
+    students = Student.objects.all()
+    return render(request, 'admin/student_list.html', {'students': students})
+
+def student_detail(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+    return render(request, 'admin/student_detail.html', {'student': student})
+
+def student_edit(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+
+    if request.method == 'POST':
+        form = StudentEditForm(request.POST, instance=student)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Student details updated successfully!")
+            return redirect('student_detail', student_id=student.id)
+    else:
+        form = StudentEditForm(instance=student)
+
+    return render(request, 'admin/student_edit.html', {'form': form, 'student': student})
+
+def student_delete(request, student_id):
+    student = get_object_or_404(Student, id=student_id)
+
+    if request.method == "POST":  # Handle form submission
+        if student.user is not None:
+            student.user.delete()  # Delete associated user account
+        student.delete()  # Delete student record
+        messages.success(request, "Student deleted successfully!")
+        return redirect('student_list')  # Redirect after deletion
+
+    # If GET request, render the confirmation page
+    return render(request, 'admin/student_delete.html', {'student': student})
+
 

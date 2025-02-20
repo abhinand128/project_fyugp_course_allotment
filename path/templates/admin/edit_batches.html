@@ -1,40 +1,82 @@
+
 {% extends 'admin_base.html' %}
-
-{% block title %}edite Batches{% endblock %}
-
+{% block title %}Edit Batches{% endblock %}
 {% block content %}
     <h1 class="text-center">Edit Batches</h1>
-    
-    <a href="{% url 'create_batch' %}" class="btn btn-success mb-4">Create Batch</a>
+
+    <!-- "Select All" Checkbox with Label -->
+    <div class="d-flex justify-content-between mb-4">
+        <div>
+            <input type="checkbox" id="select-all">
+            <label for="select-all" class="ms-2">Select All</label>
+        </div>
+        <a href="{% url 'create_batch' %}" class="btn btn-success">Create Batch</a>
+    </div>
 
     <h3>All Batches</h3>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Course</th>
-                <th>Year</th>
-                <th>Part</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for batch in batches %}
-            <tr>
-                <td>{{ batch.course }}</td>
-                <td>{{ batch.year }}</td>
-                <td>{{ batch.get_part_display }}</td>
-                <td>{{ batch.status }}</td>
-                <td>
-                    <a href="{% url 'edit_batch' batch.id %}" class="btn btn-warning btn-sm">Edit Status</a>
-                    <a href="{% url 'delete_batch' batch.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this batch?');">Delete</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="text-center">No batches found.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <form method="post" action="{% url 'edit_batches' %}">
+        {% csrf_token %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>
+                         
+                    </th>
+                    <th>Course</th>
+                    <th>Year</th>
+                    <th>Part</th>
+                    <th>Status</th>
+                    <th class="text-center">Actions</th>  <!-- Centering Header -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for batch in batches %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="batch_ids" value="{{ batch.id }}">
+                    </td>
+                    <td>{{ batch.course }}</td>
+                    <td>{{ batch.year }}</td>
+                    <td>{{ batch.get_part_display }}</td>
+                    <td>
+                        {% if batch.status %}
+                            Active
+                        {% else %}
+                            Inactive
+                        {% endif %}
+                    </td>
+                    <td class="text-center">  <!-- Centering Delete Button -->
+                        <a href="{% url 'delete_batch' batch.id %}" class="btn btn-danger btn-sm"
+                            onclick="return confirm('Are you sure you want to delete this batch?');">
+                            Delete
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">No batches found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Bulk Status Update Section -->
+        <div class="form-group mt-3">
+            <label for="bulk_status">Set Status for Selected Batches:</label>
+            <select name="bulk_status" class="form-control" required>
+                <option value="">-- Select Status --</option>
+                <option value="True">Active</option>
+                <option value="False">Inactive</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-2">Update Selected Batches</button>
+    </form>
+
+    <script>
+    document.getElementById("select-all").addEventListener("change", function() {
+        let checkboxes = document.querySelectorAll('input[name="batch_ids"]');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+    </script>
 {% endblock %}

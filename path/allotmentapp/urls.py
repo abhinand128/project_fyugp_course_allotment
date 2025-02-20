@@ -5,7 +5,7 @@ urlpatterns = [
     path("admin-login/", views.admin_login, name="admin_login"),
     path("student-login/",views.student_login, name="student_login"),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('add-student/', views.add_student, name='add_student'),
+    # path('add-student/', views.add_student, name='add_student'),
     path('student-dashboard/', views.student_dashboard, name='student_dashboard'),
     path("view_courses_std/", views.view_courses_student, name="view_courses_student"),
     path('course_selection/',views.course_selection, name='course_selection'),
@@ -14,9 +14,8 @@ urlpatterns = [
 
     path('logout/',views.student_logout, name='logout'),
     path('logout/',views.admin_logout, name='admin_logout'),
-    path('view_courses/', views.view_courses, name='view_courses'),
     path('add_course/', views.add_course, name='add_course'),
-    path('edite_courses/', views.edit_courses, name='edit_courses'), 
+    path('manage_courses/', views.manage_courses, name='manage_courses'), 
     path('edit_course/<int:course_id>/', views.edit_course, name='edit_course'),
     path('delete_course/<int:course_id>/', views.delete_course, name='delete_course'),
     path('manage_courses/', views.manage_courses, name='manage_courses'),
@@ -33,6 +32,14 @@ urlpatterns = [
     path('view_second_sem_allotments/', views.view_second_sem_allotments, name='view_second_sem_allotments'),
 
     path('view-allotment/', views.view_student_allotment, name='view_student_allotment'),
+    
+    path('manage_students/', views.manage_students, name='manage_students'),
+    path('register/', views.student_register, name='student_register'),
+    path("bulk-upload/", views.bulk_student_upload, name="bulk_student_upload"),
+    path('students/', views.student_list, name='student_list'),
+    path('students/<int:student_id>/', views.student_detail, name='student_detail'),
+    path('students/<int:student_id>/edit/', views.student_edit, name='student_edit'),
+    path('students/<int:student_id>/delete/', views.student_delete, name='student_delete'),
 
 
 ]

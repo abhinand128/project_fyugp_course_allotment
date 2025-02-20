@@ -1,0 +1,28 @@
+{% extends 'admin_base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">Bulk Student Upload</h2>
+
+    <!-- Display Messages -->
+    {% if messages %}
+    <div class="mt-3">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="p-4 border rounded">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">{{ form.csv_file.label }}</label>
+            {{ form.csv_file }}
+            <p class="text-muted">{{ form.csv_file.help_text }}</p>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+        <a href="{% url 'student_register' %}" class="btn btn-secondary">Back to Registration</a>
+    </form>
+</div>
+{% endblock %}

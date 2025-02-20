@@ -16,6 +16,7 @@
     .form-container h1 {
         font-size: 2rem;
         font-weight: 600;
+        text-align: center;
     }
     .btn-custom {
         width: 48%;
@@ -25,11 +26,26 @@
         color: white;
     }
 </style>
+
 <div class="container my-5">
     <div class="form-container">
+        <h1>Add Course</h1>
         
         <!-- Load custom filters -->
         {% load custom_filters %}
+
+        <!-- Display Form Validation Errors -->
+        {% if form.errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li>{{ field.label }}: {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
 
         <!-- Course Form -->
         <form method="post">
@@ -52,7 +68,7 @@
             </div>
             <div class="mb-3">
                 <label for="semester" class="form-label">Semester</label>
-                {{ form.semester|add_class:"form-control" }}
+                {{ form.semester|add_class:"form-select" }}
             </div>
             <div class="mb-3">
                 <label for="seat_limit" class="form-label">Seat Limit</label>
@@ -60,9 +76,13 @@
             </div>
 
             <!-- Submit Button and View Courses Button -->
-            <div class="lex justify-content-between">
-                <center><button type="submit" class="btn btn-success btn-custom">Add Course</button> </center>
-                
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'manage_courses' %}" class="btn btn-secondary btn-custom">
+                    <i class="fas fa-arrow-left"></i> Back
+                </a>
+                <button type="submit" class="btn btn-success btn-custom">
+                    <i class="fas fa-plus"></i> Add Course
+                </button>
             </div>
         </form>
     </div>

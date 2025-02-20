@@ -1,5 +1,7 @@
 from django import forms
 from .models import Student,Course,Course_type,Department,Batch,CourseAllotment
+from django.core.exceptions import ValidationError
+
 
 class StudentForm(forms.ModelForm):
     class Meta:
@@ -152,7 +154,7 @@ class CourseSelectionFormSem2(forms.Form):
             # Fetch Semester 1 Course Allotments for this student
             sem1_allotments = CourseAllotment.objects.filter(student=student, batch__course__semester=1)
 
-        # Identify the department of Paper 3 and Paper 1
+            # Identify the department of Paper 3 and Paper 1
             paper_3_allotment = sem1_allotments.filter(paper_no=3).first()
             paper_1_allotment = sem1_allotments.filter(paper_no=1).first()
 
@@ -161,8 +163,8 @@ class CourseSelectionFormSem2(forms.Form):
 
             print("Paper 3 Department:", paper_3_department)
             print("Paper 1 Department:", paper_1_department)
-            
-            # Fetch only Semester 1 batches
+
+            # Fetch only Semester 2 batches
             dsc_batches = Batch.objects.select_related('course', 'course__department').filter(
                 course__course_type__name__startswith='DSC',
                 course__semester=2  # Ensuring the course is for Semester 2
@@ -211,7 +213,7 @@ class CourseSelectionFormSem2(forms.Form):
             # Add DSC 2 options (same for all pathways, but dynamic in Double Major)
             if student.pathway.name == "Double Major":
                 dsc_2_count = dsc_2_batches.count()
-                for i in range(1, dsc_2_count):
+                for i in range(1, dsc_2_count):  # Dynamically set number of DSC 2 fields
                     field_name = f'dsc_2_option_{i}'
                     self.fields[field_name] = forms.ModelChoiceField(
                         queryset=dsc_2_batches,
@@ -222,7 +224,7 @@ class CourseSelectionFormSem2(forms.Form):
                     self.fields[field_name].label_from_instance = batch_label
                     field_order.append(field_name)
             else:
-                # For other pathways, just use all available DSC 2 batches (without department filtering)
+                # For other pathways, fixed 3 options for DSC 2
                 for i in range(1, 4):
                     field_name = f'dsc_2_option_{i}'
                     self.fields[field_name] = forms.ModelChoiceField(
@@ -234,17 +236,31 @@ class CourseSelectionFormSem2(forms.Form):
                     self.fields[field_name].label_from_instance = batch_label
                     field_order.append(field_name)
 
-            # Add DSC 3 options (same for all pathways)
-            for i in range(1, 4):
-                field_name = f'dsc_3_option_{i}'
-                self.fields[field_name] = forms.ModelChoiceField(
-                    queryset=dsc_3_batches,
-                    required=True,
-                    label=f'Option {i}',
-                    empty_label="Select an option",
-                )
-                self.fields[field_name].label_from_instance = batch_label
-                field_order.append(field_name)
+            # Add DSC 3 options (Dynamic for Double Major)
+            if student.pathway.name == "Double Major":
+                dsc_3_count = dsc_3_batches.count()
+                for i in range(1, dsc_3_count + 1):  # Dynamically set number of DSC 3 fields
+                    field_name = f'dsc_3_option_{i}'
+                    self.fields[field_name] = forms.ModelChoiceField(
+                        queryset=dsc_3_batches,
+                        required=True,
+                        label=f'Option {i}',
+                        empty_label="Select an option",
+                    )
+                    self.fields[field_name].label_from_instance = batch_label
+                    field_order.append(field_name)
+            else:
+                # For other pathways, fixed 3 options for DSC 3
+                for i in range(1, 4):
+                    field_name = f'dsc_3_option_{i}'
+                    self.fields[field_name] = forms.ModelChoiceField(
+                        queryset=dsc_3_batches,
+                        required=True,
+                        label=f'Option {i}',
+                        empty_label="Select an option",
+                    )
+                    self.fields[field_name].label_from_instance = batch_label
+                    field_order.append(field_name)
 
             # Dynamically generate MDC options based on available courses
             mdc_count = mdc_filtered_batches.count()
@@ -266,10 +282,27 @@ class CourseSelectionFormSem2(forms.Form):
         print("Final Field Order:", list(self.fields.keys()))
 
 
+
+from django import forms
+
+
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
         fields = ['course_code', 'course_name', 'course_type', 'department', 'semester', 'seat_limit']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        course_code = cleaned_data.get("course_code")
+        course_name = cleaned_data.get("course_name")
+
+        if Course.objects.filter(course_code=course_code).exists():
+            raise ValidationError({'course_code': "A course with this code already exists."})
+
+        if Course.objects.filter(course_name=course_name).exists():
+            raise ValidationError({'course_name': "A course with this name already exists."})
+
+        return cleaned_data
 
 class BatchForm(forms.ModelForm):
     class Meta:
@@ -292,3 +325,46 @@ class BatchFilterForm(forms.Form):
     course = forms.ModelChoiceField(queryset=Course.objects.all(), required=False)
     year = forms.CharField(max_length=9, required=False)
     part = forms.ChoiceField(choices=[(1, 'Part 1'), (2, 'Part 2')], required=False)
+
+
+class StudentRegistrationForm(forms.ModelForm):
+    dob = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label="Date of Birth"
+    )
+    password = forms.CharField(
+        widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'form-control'}),
+        label="Password (Auto-filled from DOB)",
+        required=False  # This ensures the form does not throw validation errors
+    )
+    normalized_marks = forms.IntegerField(
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        label="Marks"
+    )
+
+    class Meta:
+        model = Student
+        fields = ['admission_number', 'name', 'dob', 'email', 'department', 
+                  'admission_category', 'pathway', 'current_sem', 'normalized_marks', 'password']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        dob = cleaned_data.get('dob')
+
+        if dob:
+            formatted_password = dob.strftime('%d/%m/%y')  # Correct format: DD/MM/YY
+            cleaned_data['password'] = formatted_password  # Update password field in form
+
+        return cleaned_data
+
+class BulkStudentUploadForm(forms.Form):
+    csv_file = forms.FileField(label="Upload CSV File", help_text="Only .csv files are allowed")
+
+
+class StudentEditForm(forms.ModelForm):
+    class Meta:
+        model = Student
+        fields = ['name', 'dob', 'email', 'department', 'admission_category', 'pathway', 'current_sem']
+        widgets = {
+            'dob': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        }
