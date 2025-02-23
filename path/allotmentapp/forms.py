@@ -1,7 +1,7 @@
 from django import forms
 from .models import Student,Course,Course_type,Department,Batch,CourseAllotment
 from django.core.exceptions import ValidationError
-
+from datetime import datetime
 
 class StudentForm(forms.ModelForm):
     class Meta:
@@ -10,21 +10,29 @@ class StudentForm(forms.ModelForm):
 
 
 class CourseFilterForm(forms.Form):
+    SEMESTER_CHOICES = [("", "Select Semester")] + [(str(i), f"Semester {i}") for i in range(1, 9)]
+
     course_type = forms.ModelChoiceField(
-        queryset=Course_type.objects.all(), 
-        required=False, 
-        empty_label="Select Course Type", 
-        widget=forms.Select(attrs={'class': 'form-select'})
+        queryset=Course_type.objects.all(),
+        required=False,
+        empty_label="All Course Types",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Course Type"
     )
+
     department = forms.ModelChoiceField(
-        queryset=Department.objects.all(), 
-        required=False, 
-        empty_label="Select Department", 
-        widget=forms.Select(attrs={'class': 'form-select'})
+        queryset=Department.objects.all(),
+        required=False,
+        empty_label="All Departments",
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Department"
     )
-    semester = forms.IntegerField(
-        required=False, 
-        widget=forms.NumberInput(attrs={'placeholder': 'Enter Semester', 'class': 'form-control'})
+
+    semester = forms.ChoiceField(
+        choices=SEMESTER_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Semester"
     )
 
 class CourseSelectionFormSem1(forms.Form):
@@ -284,30 +292,50 @@ class CourseSelectionFormSem2(forms.Form):
 
 
 from django import forms
-
-
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
         fields = ['course_code', 'course_name', 'course_type', 'department', 'semester', 'seat_limit']
 
-    def clean(self):
-        cleaned_data = super().clean()
-        course_code = cleaned_data.get("course_code")
-        course_name = cleaned_data.get("course_name")
+# class CourseForm(forms.ModelForm):
+#     class Meta:
+#         model = Course
+#         fields = ['course_code', 'course_name', 'course_type', 'department', 'semester', 'seat_limit']
 
-        if Course.objects.filter(course_code=course_code).exists():
-            raise ValidationError({'course_code': "A course with this code already exists."})
+#     def clean(self):
+#         cleaned_data = super().clean()
+#         course_code = cleaned_data.get("course_code")
+#         course_name = cleaned_data.get("course_name")
 
-        if Course.objects.filter(course_name=course_name).exists():
-            raise ValidationError({'course_name': "A course with this name already exists."})
+#         if Course.objects.filter(course_code=course_code).exists():
+#             raise ValidationError({'course_code': "A course with this code already exists."})
 
-        return cleaned_data
+#         if Course.objects.filter(course_name=course_name).exists():
+#             raise ValidationError({'course_name': "A course with this name already exists."})
+
+#         return cleaned_data
 
 class BatchForm(forms.ModelForm):
+    # Generate year choices dynamically (from current year onwards)
+    def get_year_choices():
+        current_year = datetime.now().year
+        return [(f"{year}-{year+1}", f"{year}-{year+1}") for year in range(current_year, current_year + 10)]
+
+    year = forms.ChoiceField(
+        choices=[('', 'Select Year')] + get_year_choices(),
+        label="Academic Year",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    part = forms.ChoiceField(
+        choices=[('', 'Select Part'), ('1', 'Part 1'), ('2', 'Part 2')],
+        label="Batch Part",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
     class Meta:
         model = Batch
-        fields = ['year', 'part']  # Removed 'course' as it's auto-assigned
+        fields = ['year', 'part']
 
     def clean(self):
         cleaned_data = super().clean()
@@ -319,12 +347,29 @@ class BatchForm(forms.ModelForm):
 
         return cleaned_data
 
+
    
 
 class BatchFilterForm(forms.Form):
-    course = forms.ModelChoiceField(queryset=Course.objects.all(), required=False)
-    year = forms.CharField(max_length=9, required=False)
-    part = forms.ChoiceField(choices=[(1, 'Part 1'), (2, 'Part 2')], required=False)
+    year = forms.ChoiceField(
+        required=False,
+        label="Academic Year",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    part = forms.ChoiceField(
+        choices=[('', 'Select Part'), ('1', 'Part 1'), ('2', 'Part 2')],
+        required=False,
+        label="Batch Part",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(BatchFilterForm, self).__init__(*args, **kwargs)
+        # Dynamically populate year choices from the database
+        years = Batch.objects.values_list('year', flat=True).distinct()
+        self.fields['year'].choices = [('', 'Select Year')] + [(year, year) for year in years]
+
 
 
 class StudentRegistrationForm(forms.ModelForm):

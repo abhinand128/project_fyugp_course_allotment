@@ -20,6 +20,6 @@ from allotmentapp import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.index, name='home'),
     path('', include('allotmentapp.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
 ]

@@ -1,0 +1,135 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to PATH</title>
+
+    {% load static %}  <!-- Load static files -->
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    
+    <!-- Custom CSS -->
+    <style>
+        /* Navbar background */
+        .navbar {
+            background-color: black !important;
+            padding: 10px 0; /* Reduce padding */
+        }
+
+        /* Navbar brand */
+        .navbar-brand {
+            font-size: 22px;
+            font-weight: bold;
+            padding: 0; /* Remove extra padding */
+        }
+
+        /* Button Styles (Previous Style) */
+        .btn-custom {
+            border-radius: 10px; /* Rounded corners */
+            padding: 8px 18px;
+            font-size: 16px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease-in-out;
+        }
+
+        .btn-outline-login {
+            border-color: #007bff;
+            color: #007bff;
+        }
+
+        .btn-outline-login:hover {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-outline-contact {
+            border-color: #28a745;
+            color: #28a745;
+        }
+
+        .btn-outline-contact:hover {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-outline-website {
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .btn-outline-website:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        /* Carousel image size */
+        .carousel-item img {
+            height: 500px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <h2 style="color: antiquewhite;">WELCOME TO PATH</h2>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <!-- Login Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle btn btn-custom btn-outline-login" href="#" id="loginDropdown" role="button" data-toggle="dropdown">
+                            Login
+                        </a>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="{% url 'student_login' %}">Student</a>
+                            <a class="dropdown-item" href="{% url 'admin_login' %}">Admin</a>
+                            <a class="dropdown-item" href="#">HOD</a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-custom btn-outline-contact mx-2" href="#">Contact Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-custom btn-outline-website mx-2" href="#">College Website</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Image Slider -->
+    <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <img src="{% static 'images/nasc1.png' %}" class="d-block w-100" alt="College Image 1">
+            </div>
+            <div class="carousel-item">
+                <img src="{% static 'images/library.jpg' %}" class="d-block w-100" alt="College Image 2">
+            </div>
+            <div class="carousel-item">
+                <img src="{% static 'images/university.jpg' %}" class="d-block w-100" alt="College Image 3">
+            </div>
+        </div>
+        <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </a>
+        <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </a>
+    </div>
+
+    <!-- Bootstrap Scripts -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" crossorigin="anonymous"></script>
+
+</body>
+</html>

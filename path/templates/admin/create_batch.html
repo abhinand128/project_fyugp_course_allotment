@@ -1,107 +1,108 @@
-Try AI directly in your favorite apps … Use Gemini to generate drafts and refine content, plus get Gemini Advanced with access to Google’s next-gen AI for ₹1,950.00 ₹0 for 1 month
 {% extends 'admin_base.html' %}
 
 {% block title %}Create Batch{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <h1 class="text-center">Create Batch</h1>
+<div class="container my-5">
+    <div class="card shadow-lg p-4">
+        <h1 class="text-center mb-4">Create Batch</h1>
+        
+        <!-- Display Error Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-danger text-center">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
 
-    <!-- Display Error Messages -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-danger text-center">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-
-    <!-- Filter Form -->
-    <form method="get" class="mb-4">
-        <div class="row">
-            <div class="col-md-4">
-                {{ filter_form.course_type.label_tag }}
-                {{ filter_form.course_type }}
-            </div>
-            <div class="col-md-4">
-                {{ filter_form.department.label_tag }}
-                {{ filter_form.department }}
-            </div>
-            <div class="col-md-4">
-                {{ filter_form.semester.label_tag }}
-                {{ filter_form.semester }}
-            </div>
+        <!-- Filter Form (Triggers Table Update on Change) -->
+        <div class="collapse show" id="filterForm">
+            <form id="filter-form" method="get">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="fw-bold">{{ filter_form.course_type.label }}</label>
+                        {{ filter_form.course_type }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="fw-bold">{{ filter_form.department.label }}</label>
+                        {{ filter_form.department }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="fw-bold">{{ filter_form.semester.label }}</label>
+                        {{ filter_form.semester }}
+                    </div>
+                </div>
+            </form>
         </div>
-        <div class="text-center mt-3">
-            <button type="submit" class="btn btn-primary">View Courses</button>
-        </div>
-    </form>
 
-    <!-- Display Courses -->
-    {% if courses %}
-        <h3>Available Courses</h3>
-        <div class="table-responsive">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Course Code</th>
-                        <th>Course Name</th>
-                        <th>Type</th>
-                        <th>Department</th>
-                        <th>Semester</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for course in courses %}
+        <!-- Courses Table -->
+        <form method="post">
+            {% csrf_token %}
+            
+            <h3 class="mt-4">Select Courses</h3>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mt-2">
+                    <thead class="table-dark">
                         <tr>
-                            <td>{{ course.course_code }}</td>
-                            <td>{{ course.course_name }}</td>
-                            <td>{{ course.course_type }}</td>
-                            <td>{{ course.department }}</td>
-                            <td>{{ course.semester }}</td>
+                            <th>
+                                <input type="checkbox" id="select-all">
+                            </th>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
+                            <th>Type</th>
+                            <th>Department</th>
+                            <th>Semester</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <p class="text-center">No courses found for the given selection.</p>
-    {% endif %}
-
-    <!-- Batch Creation Form -->
-    <form method="post">
-        {% csrf_token %}
-        <h3>Batch Details</h3>
-        <div class="row">
-            <div class="col-md-6">
-                <label class="fw-bold">{{ form.year.label }}</label>
-                {{ form.year }}
+                    </thead>
+                    <tbody id="courses-table">
+                        {% for course in courses %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="selected_courses" value="{{ course.id }}">
+                                </td>
+                                <td>{{ course.course_code }}</td>
+                                <td>{{ course.course_name }}</td>
+                                <td>{{ course.course_type }}</td>
+                                <td>{{ course.department }}</td>
+                                <td>{{ course.semester }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No courses found.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="col-md-6">
-                <label class="fw-bold">{{ form.part.label }}</label>
-                {{ form.part }}
-            </div>
-        </div>
 
-        <div class="text-center mt-4">
-            <button type="submit" class="btn btn-success">Create Batch</button>
-        </div>
-    </form>
+            <!-- Batch Details -->
+            <h3 class="mt-4">Batch Details</h3>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="fw-bold">{{ form.year.label }}</label>
+                    {{ form.year }}
+                </div>
+                <div class="col-md-6">
+                    <label class="fw-bold">{{ form.part.label }}</label>
+                    {{ form.part }}
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success">
+                     Create
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <style>
-    /* Ensure full width layout */
-    .container-fluid {
-        width: 100%;
-        padding: 0 20px;
-    }
-    
-    /* Keep table styling consistent */
+
     .table {
         background: white;
         border-radius: 5px;
         overflow: hidden;
     }
-
-    /* Styling for form inputs */
     select, input {
         width: 100%;
         padding: 10px;
@@ -109,17 +110,30 @@ Try AI directly in your favorite apps … Use Gemini to generate drafts and refi
         border: 1px solid #ccc;
         transition: all 0.3s;
     }
-
     select:focus, input:focus {
         border-color: #007bff;
         outline: none;
         box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
     }
-
     .alert {
         font-size: 16px;
         padding: 10px;
         border-radius: 5px;
     }
 </style>
+
+<script>
+document.getElementById("select-all").addEventListener("change", function() {
+    let checkboxes = document.querySelectorAll('input[name="selected_courses"]');
+    checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+});
+
+// Auto-submit filter form when dropdowns change
+document.querySelectorAll("#filter-form select").forEach(select => {
+    select.addEventListener("change", function() {
+        document.getElementById("filter-form").submit();
+    });
+});
+</script>
+
 {% endblock %}

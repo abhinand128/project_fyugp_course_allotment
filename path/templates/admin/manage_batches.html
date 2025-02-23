@@ -1,57 +1,129 @@
 {% extends 'admin_base.html' %}
-
 {% block title %}Manage Batches{% endblock %}
-
 {% block content %}
-<h2 class="text-center">Manage Batches</h2>
-<div class="cards-container">
-    <div class="card" onclick="window.location.href='{% url 'view_batches' %}'">
-        <h3>View Courses</h3>
-        <p>Browse the list of available Batches</p>
+
+<div class="container my-5">
+    <div class="card shadow-lg p-4">
+        <h1 class="text-center">Manage Batches</h1><br>
+        <!-- Display Django Messages -->
+{% if messages %}
+<div class="container">
+    {% for message in messages %}
+    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-    <div class="card" onclick="window.location.href='{% url 'create_batch' %}'">
-        <h3>create_batch</h3>
-        <p>Add new batches to the system</p>
-    </div>
-    <div class="card" onclick="window.location.href='{% url 'edit_batches' %}'">
-        <h3>Edit batch</h3>
-        <p>Modify existing Batches details</p>
+    {% endfor %}
+</div>
+{% endif %}
+
+        <!-- Filter & Add Batch Buttons -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterForm">
+                <i class="fas fa-filter"></i> Filter Batches
+            </button>
+
+            <a href="{% url 'create_batch' %}" class="btn btn-success">
+                <i class="fas fa-plus"></i> create Batch
+            </a>
+        </div>
+
+        <!-- Filter Form -->
+        <div class="collapse" id="filterForm">
+            <form method="get" class="mb-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Year:</label>
+                        {{ form.year }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Part:</label>
+                        {{ form.part }}
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Batches Table -->
+        <form method="post" action="{% url 'manage_batches' %}">
+            {% csrf_token %}
+            <table class="table table-bordered table-hover mt-3" id="batch-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center">
+                            <input type="checkbox" id="select-all">
+                        </th>
+                        <th>Batches</th>
+                        <th>Year</th>
+                        <th>Part</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in batches %}
+                    <tr>
+                        <td class="text-center">
+                            <input type="checkbox" name="batch_ids" value="{{ batch.id }}">
+                        </td>
+                        <td>{{ batch.course }}</td>
+                        <td>{{ batch.year }}</td>
+                        <td>{{ batch.get_part_display }}</td>
+                        <td>
+                            {% if batch.status %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No batches found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Bulk Actions -->
+            <div class="row mt-3">
+                <!-- Status Update -->
+                <div class="col-md-4">
+                    <label for="bulk_status" class="form-label">Set Status for Selected:</label>
+                    <select name="bulk_status" class="form-select">
+                        <option value="">-- Select Status --</option>
+                        <option value="True">Active</option>
+                        <option value="False">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" name="action" value="update" class="btn btn-primary w-100">
+                        <i class="fas fa-sync-alt"></i> Update
+                    </button>
+                </div>
+
+                <!-- Delete Selected Batches -->
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" name="action" value="delete" class="btn btn-danger w-100"
+                        onclick="return confirm('Are you sure you want to delete the selected batches?');">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
-<style>
-    /* Cards Section */
-    .cards-container {
-        display: flex;
-        justify-content: center;
-        gap: 30px;
-        margin: 30px auto;
-        flex-wrap: wrap;
-    }
+<!-- JavaScript for Select All -->
+<script>
+document.getElementById("select-all").addEventListener("change", function() {
+    let checkboxes = document.querySelectorAll('input[name="batch_ids"]');
+    checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+});
+</script>
 
-    .card {
-        border: none;
-        border-radius: 15px;
-        padding: 25px;
-        width: 260px;
-        text-align: center;
-        cursor: pointer;
-        box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease-in-out;
-        background: linear-gradient(145deg, #ffffff, #f0f0f3);
-    }
-
-    .card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .card h3 {
-        margin-bottom: 15px;
-    }
-
-    .card p {
-        color: #777;
-    }
-</style>
 {% endblock %}

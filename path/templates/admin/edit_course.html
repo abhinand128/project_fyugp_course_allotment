@@ -5,8 +5,9 @@
     
 {% block content %}
 <div class="container my-5">
-    <div class="form-container">
-        <!-- <h2 class="text-center mb-4 highlight">Edit Course : {{ course.course_code }}</h2> -->
+    <div class="card shadow-lg p-4">
+        <div class="form-container">
+        <h2 class="text-center mb-4 highlight">Edit Course : {{ course.course_name }}</h2>
         
         <!-- Course Form -->
         <form method="post">
@@ -72,6 +73,7 @@
                 <a href="{% url 'manage_courses' %}" class="btn btn-primary">View Courses</a>
             </div>
         </form>
+        </div>
     </div>
 </div>
 {% endblock %}

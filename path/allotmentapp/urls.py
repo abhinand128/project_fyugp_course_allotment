@@ -2,6 +2,7 @@ from django.urls import path
 from allotmentapp import views
 
 urlpatterns = [
+    path('', views.index, name='home'),
     path("admin-login/", views.admin_login, name="admin_login"),
     path("student-login/",views.student_login, name="student_login"),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
@@ -20,8 +21,6 @@ urlpatterns = [
     path('delete_course/<int:course_id>/', views.delete_course, name='delete_course'),
     path('manage_courses/', views.manage_courses, name='manage_courses'),
     path('manage_batches/', views.manage_batches, name='manage_batches'),
-    path('edit_batches/', views.edit_batches, name='edit_batches'),
-    path('view_batches/', views.view_batches, name='view_batches'),
     path('create_batch/', views.create_batch, name='create_batch'),
     path('edit_batch/<int:batch_id>/', views.edit_batch, name='edit_batch'),
     path('delete_batch/<int:batch_id>/', views.delete_batch, name='delete_batch'),
@@ -40,6 +39,7 @@ urlpatterns = [
     path('students/<int:student_id>/', views.student_detail, name='student_detail'),
     path('students/<int:student_id>/edit/', views.student_edit, name='student_edit'),
     path('students/<int:student_id>/delete/', views.student_delete, name='student_delete'),
-
+    path('download_preferences_csv_first_sem/', views.download_preferences_csv_first_sem, name='download_preferences_csv_first_sem'),
+    path('download_preferences_csv_second_sem/', views.download_preferences_csv_second_sem, name='download_preferences_csv_second_sem'),
 
 ]

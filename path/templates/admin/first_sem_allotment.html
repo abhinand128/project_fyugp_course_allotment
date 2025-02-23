@@ -1,29 +1,178 @@
 {% extends 'admin_base.html' %}
+{% load static %}
+{% load custom_filters %}
 
 {% block title %}First Semester Allotment{% endblock %}
-
 {% block content %}
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        {% if already_allocated %}
-        alert("Already allocated. Redirecting to view allotments.");
-        window.location.href = "{% url 'view_first_sem_allotments' %}";
-        {% endif %}
-    });
-</script>
 
-<form method="post">
-    {% csrf_token %}
-    <button type="submit">Allocate</button>
-</form>
 
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-{% endif %}
+<div class="container-fluid py-4">
+    <div class="card shadow-lg">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">Student Preferences for First Semester</h3>
+            <a href="{% url 'download_preferences_csv_first_sem' %}" class="btn btn-success">
+                <i class="fas fa-download"></i> Download CSV
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th class="align-middle">Admission No.</th>
+                            <th class="align-middle">Name</th>
+                            <th class="align-middle">Department</th>
+                            <th class="align-middle">Pathway</th>
+                            <th class="align-middle">Category</th>
+                            <th class="align-middle">Normalized Marks</th>
+                            {% for paper_no, preferences in paper_options.items %}
+                                {% for pref_no in preferences %}
+                                    <th class="align-middle text-center">
+                                        Paper {{ paper_no }}<br>Option {{ pref_no }}
+                                    </th>
+                                {% endfor %}
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                            <tr>
+                                <td>{{ student.admission_number }}</td>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.department.name }}</td>
+                                <td>{{ student.pathway }}</td>
+                                <td>{{ student.admission_category }}</td>
+                                <td class="text-center">{{ student.normalized_marks }}</td>
+                                {% for paper_no, preferences in paper_options.items %}
+                                    {% for pref_no in preferences %}
+                                        <td class="text-center">
+                                            {% get_specific_preference student.coursepreference_set.all paper_no pref_no %}
+                                        </td>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
+            <form method="post" id="allotmentForm" class="mt-4">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary" id="allocateBtn">
+                    <i class="fas fa-check-circle"></i> Allocate Courses
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <h5>Processing Allocation...</h5>
+                <p class="text-muted mb-0">Please wait while we allocate courses.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="text-success mb-3">
+                    <i class="fas fa-check-circle fa-3x"></i>
+                </div>
+                <h5>Allocation Successful!</h5>
+                <p class="text-muted mb-3">Course allocation has been completed successfully.</p>
+                <p>Redirecting to allotment results...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
 <style>
-    /* ... (Your CSS styles) ... */
+.table-sm td, .table-sm th {
+    padding: 0.5rem;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.table td {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.align-middle {
+    vertical-align: middle;
+}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('allotmentForm');
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+    
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        loadingModal.show();
+        
+        setTimeout(function() {
+            loadingModal.hide();
+            successModal.show();
+            setTimeout(function() {
+                form.submit();
+            }, 2000);
+        }, 4000);
+    });
+    
+    {% if messages %}
+        {% for message in messages %}
+            if ("{{ message.tags }}" === "success") {
+                successModal.show();
+                setTimeout(function() {
+                    window.location.href = "{% url 'view_first_sem_allotments' %}";
+                }, 2000);
+            } else {
+                alert("{{ message }}");
+                {% if 'warning' in message.tags %}
+                    window.location.href = "{% url 'view_first_sem_allotments' %}";
+                {% endif %}
+            }
+        {% endfor %}
+    {% endif %}
+});
+</script>
+{% endblock %}
 {% endblock %}
