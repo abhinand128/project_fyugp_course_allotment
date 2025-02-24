@@ -1,0 +1,66 @@
+{% extends 'admin_base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+<style>
+    /* Custom styling for form elements */
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 30px;
+        background-color: #f9f9f9;
+        border-radius: 16px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+    .form-container h2 {
+        font-size: 2rem;
+        font-weight: 600;
+        text-align: center;
+    }
+    .btn-custom {
+        width: 100%;
+    }
+</style>
+
+<div class="container my-5">
+    <div class="form-container">
+        <h2>HOD Registration</h2>
+
+        <!-- Display success messages -->
+        {% if messages %}
+            <div class="alert alert-success">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label">Full Name</label>
+                {{ form.full_name|add_class:"form-control" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                {{ form.email|add_class:"form-control" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Phone Number</label>
+                {{ form.phone_number|add_class:"form-control" }}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Department</label>
+                {{ form.department|add_class:"form-select" }}
+            </div>
+
+            <button type="submit" class="btn btn-success btn-custom">Register</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

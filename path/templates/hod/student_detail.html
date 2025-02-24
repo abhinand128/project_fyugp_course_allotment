@@ -1,21 +1,22 @@
-{% extends 'admin_base.html' %}
+{% extends 'HOD_base.html' %}
 
 {% block content %}
 <div class="container mt-4">
     <h2>Student Details</h2>
-    <table class="table">
+
+    <table class="table table-bordered">
         <tr><th>Admission Number:</th><td>{{ student.admission_number }}</td></tr>
         <tr><th>Name:</th><td>{{ student.name }}</td></tr>
         <tr><th>Date of Birth:</th><td>{{ student.dob }}</td></tr>
         <tr><th>Email:</th><td>{{ student.email }}</td></tr>
         <tr><th>Department:</th><td>{{ student.department }}</td></tr>
-        <tr><th>Admission Category:</th><td>{{ student.admission_category }}</td></tr>
+        <tr><th>Admission Category:</th><td>{{ student.get_admission_category_display }}</td></tr>
         <tr><th>Pathway:</th><td>{{ student.pathway }}</td></tr>
         <tr><th>Current Semester:</th><td>{{ student.current_sem }}</td></tr>
+        <tr><th>Semester Marks:</th><td>{{ student.first_sem_marks }}</td></tr>
     </table>
 
-    <a href="{% url 'student_edit' student.id %}" class="btn btn-primary">Edit</a>
-    <a href="{% url 'student_delete' student.id %}" class="btn btn-danger">Delete</a>
-    <a href="{% url 'manage_students' %}" class="btn btn-secondary">Back to List</a>
+    <a href="{% url 'hod_student_edit' student.id %}" class="btn btn-primary">Edit</a>
+    <a href="{% url 'hod_student_list' %}" class="btn btn-secondary">Back to List</a>
 </div>
 {% endblock %}

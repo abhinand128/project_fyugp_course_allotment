@@ -409,7 +409,22 @@ class BulkStudentUploadForm(forms.Form):
 class StudentEditForm(forms.ModelForm):
     class Meta:
         model = Student
-        fields = ['name', 'dob', 'email', 'department', 'admission_category', 'pathway', 'current_sem']
+        fields = ['name', 'dob', 'email', 'department', 'admission_category', 'pathway', 'current_sem','first_sem_marks']
         widgets = {
             'dob': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'sem_marks': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
+
+from django import forms
+from .models import HOD
+
+class HODEditForm(forms.ModelForm):
+    class Meta:
+        model = HOD
+        fields = ['full_name', 'email', 'department']
+
+
+class HODForm(forms.ModelForm):
+    class Meta:
+        model = HOD
+        fields = ['full_name', 'email', 'phone_number', 'department']  # No need for password field

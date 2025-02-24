@@ -235,20 +235,18 @@
                     </a>
                 </li>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
-                        data-bs-target="#students" aria-expanded="false" aria-controls="students">
+                    <a href="{% url 'manage_students' %}" class="sidebar-link">
                         <i class="lni lni-users"></i>
                         <span>Manage Students</span>
                     </a>
-                    <ul id="students" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-                        <li class="sidebar-item">
-                            <a href="{% url 'student_list' %}" class="sidebar-link">View Students</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="{% url 'student_register' %}" class="sidebar-link">Add Student</a>
-                        </li>
-                    </ul>
                 </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'hod_list' %}" class="sidebar-link">
+                        <i class="lni lni-users"></i>
+                        <span>Manage Hod</span>
+                    </a>
+                </li>
+            
                 
                 </ul>
                 

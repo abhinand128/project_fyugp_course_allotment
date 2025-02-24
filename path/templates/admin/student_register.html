@@ -2,100 +2,74 @@
 {% load custom_filters %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="card mx-auto" style="max-width: 600px;">
-        <h2 class="card-header text-center">Student Registration</h2>
-        <div class="card-body">
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="card shadow-lg border-0 rounded-4 p-4" style="max-width: 500px; width: 100%;">
+        <h2 class="text-center fw-bold mb-4">Student Registration</h2>
 
-            <!-- Display success message -->
-            {% if messages %}
-                <div class="alert alert-success">
-                    {% for message in messages %}
-                        <p>{{ message }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
+        <!-- Display messages -->
+        {% if messages %}
+            <div class="alert alert-dismissible fade show {% if messages.tags == 'success' %}alert-success{% else %}alert-danger{% endif %}" role="alert">
+                {% for message in messages %}
+                    {{ message }}
+                {% endfor %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endif %}
 
-            <form method="post">
-                {% csrf_token %}
+        <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
 
-                <div class="mb-3">
-                    <label class="form-label">Admission Number</label>
-                    {{ form.admission_number|add_class:"form-control" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Admission Number</label>
+                {{ form.admission_number|add_class:"form-control" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Full Name</label>
-                    {{ form.name|add_class:"form-control" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Full Name</label>
+                {{ form.name|add_class:"form-control" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Date of Birth</label>
-                    {{ form.dob|add_class:"form-control" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Date of Birth</label>
+                {{ form.dob|add_class:"form-control" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    {{ form.email|add_class:"form-control" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Email</label>
+                {{ form.email|add_class:"form-control" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Department</label>
-                    {{ form.department|add_class:"form-select" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Department</label>
+                {{ form.department|add_class:"form-select" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Admission Category</label>
-                    {{ form.admission_category|add_class:"form-select" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Admission Category</label>
+                {{ form.admission_category|add_class:"form-select" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Pathway</label>
-                    {{ form.pathway|add_class:"form-select" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Pathway</label>
+                {{ form.pathway|add_class:"form-select" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Current Semester</label>
-                    {{ form.current_sem|add_class:"form-control" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Current Semester</label>
+                {{ form.current_sem|add_class:"form-control" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Marks</label>
-                    {{ form.normalized_marks|add_class:"form-control" }}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-medium">Marks</label>
+                {{ form.normalized_marks|add_class:"form-control" }}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Password (Auto-filled)</label>
-                    {{ form.password|add_class:"form-control" }}
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100">Register</button>
-                <button type="button" class="btn btn-secondary mt-3" onclick="window.location.href='{% url 'bulk_student_upload' %}'">
-                    Add Students as Bulk
-                </button>
-                
-            </form>
-        </div>
+            <button type="submit" class="btn btn-primary w-100 py-2">Register</button>
+            <button type="button" class="btn btn-outline-secondary w-100 mt-2 py-2" onclick="window.location.href='{% url 'bulk_student_upload' %}'">
+                Bulk Student Upload
+            </button>
+        </form>
     </div>
 </div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        let dobField = document.getElementById("id_dob");
-        let passwordField = document.getElementById("id_password");
-
-        dobField.addEventListener("change", function () {
-            let dobValue = new Date(dobField.value);
-            if (!isNaN(dobValue.getTime())) {
-                let day = String(dobValue.getDate()).padStart(2, '0');
-                let month = String(dobValue.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-                let year = String(dobValue.getFullYear()).slice(-2); // Get last two digits of year
-                let formattedPassword = `${day}/${month}/${year}`;
-
-                passwordField.value = formattedPassword;
-            }
-        });
-    });
-</script>
 
 {% endblock %}

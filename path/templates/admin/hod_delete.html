@@ -3,12 +3,12 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Confirm Deletion</h2>
-    <p>Are you sure you want to delete <strong>{{ student.name }}</strong>?</p>
+    <p>Are you sure you want to delete <strong>{{ hod.name }}</strong>?</p>
 
     <form method="POST">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger">Delete</button>
-        <a href="{% url 'manage_students' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'hod_list' %}" class="btn btn-secondary">Cancel</a>
     </form>
 </div>
 {% endblock %}

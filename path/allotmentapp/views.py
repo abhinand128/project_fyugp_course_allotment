@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
 from .models import Student,Course,CoursePreference,Batch,CourseAllotment,Department,Pathway
-from .forms import StudentForm,CourseFilterForm,CourseSelectionFormSem1,CourseSelectionFormSem2,CourseForm,BatchForm,BatchFilterForm,BulkStudentUploadForm,StudentRegistrationForm,StudentEditForm
+from .forms import StudentForm,CourseFilterForm,CourseSelectionFormSem1,CourseSelectionFormSem2,CourseForm,BatchForm,BatchFilterForm,BulkStudentUploadForm,StudentRegistrationForm,StudentEditForm,HOD,HODEditForm,HODForm
 from django.db import transaction
 from django.contrib.auth.models import User,Group
 import csv
@@ -1024,11 +1024,7 @@ def view_student_allotment(request):
         'allotted_courses': allotted_courses
     })
     
-@login_required
-@user_passes_test(Admin_group_required)   
-def manage_students(request):
-    """Render the manage batches page."""
-    return render(request, 'admin/manage_students.html')
+
 
 @login_required
 @user_passes_test(Admin_group_required)  
@@ -1039,27 +1035,30 @@ def student_register(request):
         if form.is_valid():
             student = form.save(commit=False)
             username = student.admission_number.strip().lower()
-            password = student.dob.strftime('%d/%m/%y')
+            password = student.dob.strftime('%d%m%Y')  # ✅ Consistent password format (DDMMYYYY)
 
             existing_user = User.objects.filter(username=username).first()
             if existing_user is None:
                 user = User.objects.create_user(username=username, password=password, email=student.email)
-                student_group, created = Group.objects.get_or_create(name='Student')  # Ensure group exists
+                
+                # ✅ Ensure "Student" group exists and assign user to it
+                student_group, created = Group.objects.get_or_create(name='Student')
                 user.groups.add(student_group)
+
                 student.user = user
                 student.save()
                 messages.success(request, "Student successfully registered!")
-                return redirect('student_register')
+                return redirect('manage_students')
             else:
                 messages.error(request, "Student with this admission number already exists.")
         else:
-            # ✅ Print form errors in the console for debugging
-            print("Form Errors:", form.errors)  
+            print("Form Errors:", form.errors)  # ✅ Debugging info
             messages.error(request, "Invalid input. Please check your form.")
     else:
         form = StudentRegistrationForm()
 
     return render(request, 'admin/student_register.html', {'form': form})
+
 
 @login_required
 @user_passes_test(Admin_group_required)  
@@ -1174,7 +1173,7 @@ def bulk_student_upload(request):
 
 @login_required
 @user_passes_test(Admin_group_required)  
-def student_list(request):
+def manage_students(request):
     students = Student.objects.all()
     return render(request, 'admin/student_list.html', {'students': students})
 
@@ -1201,18 +1200,158 @@ def student_edit(request, student_id):
     return render(request, 'admin/student_edit.html', {'form': form, 'student': student})
 
 @login_required
-@user_passes_test(Admin_group_required)  
+@user_passes_test(Admin_group_required)
 def student_delete(request, student_id):
+    """Delete a student without confirmation page."""
     student = get_object_or_404(Student, id=student_id)
-
-    if request.method == "POST":  # Handle form submission
-        if student.user is not None:
-            student.user.delete()  # Delete associated user account
-        student.delete()  # Delete student record
-        messages.success(request, "Student deleted successfully!")
-        return redirect('student_list')  # Redirect after deletion
-
-    # If GET request, render the confirmation page
-    return render(request, 'admin/student_delete.html', {'student': student})
+    
+    if student.user is not None:
+        student.user.delete()  # Delete associated user account
+        
+    student.delete()  # Delete student record
+    messages.success(request, "Student deleted successfully!")  # Success message
+    return redirect('manage_students')  # Redirect to student list page
 
 
+
+from django.core.paginator import Paginator
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import HOD
+from .forms import HODEditForm
+
+def hod_list(request):
+    hods = HOD.objects.all().order_by('id')  # Fetch all HODs sorted by ID
+    paginator = Paginator(hods, 10)  # Show 10 HODs per page
+
+    page_number = request.GET.get('page')
+    hods_page = paginator.get_page(page_number)
+
+    return render(request, 'admin/hod_list.html', {'hods': hods_page})
+
+def hod_edit(request, hod_id):
+    hod = get_object_or_404(HOD, id=hod_id)
+
+    if request.method == 'POST':
+        form = HODEditForm(request.POST, instance=hod)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "HOD details updated successfully!")
+            return redirect('hod_list')
+    else:
+        form = HODEditForm(instance=hod)
+
+    return render(request, 'admin/hod_edit.html', {'form': form, 'hod': hod})
+
+@login_required
+@user_passes_test(Admin_group_required)
+def hod_delete(request, hod_id):
+    """Delete an HOD without a confirmation page."""
+    hod = get_object_or_404(HOD, id=hod_id)
+
+    if hod.user is not None:
+        hod.user.delete()  # Delete associated user account
+
+    hod.delete()  # Delete HOD record
+    messages.success(request, "HOD deleted successfully!")  # Success message
+    return redirect('hod_list')  # Redirect to HOD list page
+
+
+from django.contrib.auth.models import Group
+
+from django.contrib.auth.models import Group
+
+@login_required
+@user_passes_test(Admin_group_required)
+def add_hod(request):
+    if request.method == "POST":
+        form = HODForm(request.POST)
+        if form.is_valid():
+            hod = form.save()  # Save directly; HOD's save() will handle User creation
+
+            # Ensure user is assigned to HOD group
+            if hod.user:
+                hod_group, created = Group.objects.get_or_create(name="hod")
+                hod.user.groups.add(hod_group)
+
+            messages.success(request, "HOD registered successfully!")
+            return redirect('hod_list')  # Redirect after success
+    else:
+        form = HODForm()
+
+    return render(request, 'admin/add_hod.html', {'form': form})
+
+
+
+
+from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import HOD  # Import HOD model
+
+def hod_login(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+
+        user = authenticate(request, username=username, password=password)
+
+        # Check if user exists and is linked to an HOD account
+        if user is not None and HOD.objects.filter(user=user).exists():
+            login(request, user)
+            return redirect("hod_dashboard")  # Redirect to HOD dashboard
+        else:
+            messages.error(request, "Invalid credentials or not an HOD.")
+
+    return render(request, "login/hod_login.html")
+
+def hod_logout(request):
+    logout(request)
+    return redirect("home")  # Redirect to home page after logout
+
+def hod_dashboard(request):
+    return render(request, "hod/hod_dashboard.html")  # Create a simple template for now
+
+ 
+def hod_profile(request):
+    hod = request.user.hod
+    return render(request, "hod/hod_profile.html", {"hod": hod})
+
+
+def hod_student_list(request):
+    # Get students only from the HOD's department
+    students = Student.objects.filter(department=request.user.hod.department).order_by('admission_number')
+    
+    return render(request, 'hod/student_list.html', {'students': students})
+
+from django.shortcuts import get_object_or_404
+
+def hod_student_detail(request, student_id):
+    student = get_object_or_404(Student, id=student_id, department=request.user.hod.department)
+    return render(request, 'hod/student_detail.html', {'student': student})
+
+
+def hod_student_edit(request, student_id):
+    student = get_object_or_404(Student, id=student_id, department=request.user.hod.department)
+
+    if request.method == 'POST':
+        form = StudentEditForm(request.POST, instance=student)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Student details updated successfully!")
+            return redirect('hod_student_detail', student_id=student.id)
+    else:
+        form = StudentEditForm(instance=student)
+
+    return render(request, 'hod/student_edit.html', {'form': form, 'student': student})
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='hod').exists())  # Ensure only HODs can delete
+def hod_student_delete(request, student_id):
+    """ Delete a student via AJAX request """
+    if request.method == "POST":
+        student = get_object_or_404(Student, id=student_id)
+        student.delete()
+        return JsonResponse({"success": True})
+    
+    return JsonResponse({"success": False, "error": "Invalid request method"})

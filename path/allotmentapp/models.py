@@ -34,6 +34,7 @@ class Student(models.Model):
     current_sem = models.PositiveIntegerField(default=1)
     normalized_marks = models.IntegerField()
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    first_sem_marks = models.FloatField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         """Auto-create a Django user when saving a new student."""
@@ -104,3 +105,35 @@ class CourseAllotment(models.Model):
 
     def __str__(self):
         return f"{self.student.name} - {self.batch} - Paper {self.paper_no}"  # Include paper_no in __str__
+
+class HOD(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)  
+    full_name = models.CharField(max_length=100)  
+    email = models.EmailField(unique=True)  
+    phone_number = models.CharField(max_length=15, blank=True, null=True)  
+    department = models.ForeignKey('Department', on_delete=models.CASCADE)  
+
+    def save(self, *args, **kwargs):
+        """ Automatically create a User for HOD and set username & password """
+        if not self.user:  
+            email_prefix = self.email.split('@')[0]  # Extract prefix before '@'
+            username = email_prefix.lower()  # Ensure lowercase username
+
+            # Ensure unique username in case of conflicts
+            counter = 1
+            original_username = username
+            while User.objects.filter(username=username).exists():
+                username = f"{original_username}{counter}"
+                counter += 1  
+
+            password = f"{original_username}@123"  # Default password
+
+            user = User.objects.create_user(username=username, password=password, email=self.email)
+            user.save()
+
+            self.user = user  # Link user to HOD before saving
+
+        super().save(*args, **kwargs)  
+
+    def __str__(self):
+        return self.full_name 

@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Edit Student Details</h2>
+        <h2 class="fw-bold">Edit HOD Details</h2>
     </div>
 
     <div class="card shadow-lg border-0 p-4">
@@ -23,7 +23,7 @@
 
                 <div class="d-flex justify-content-center mt-4">
                     <button type="submit" class="btn btn-success px-4 me-2">Save Changes</button>
-                    <a href="{% url 'manage_students' %}" class="btn btn-danger px-4">Cancel</a>
+                    <a href="{% url 'hod_list' %}" class="btn btn-danger px-4">Cancel</a>
                 </div>
             </form>
         </div>
@@ -35,38 +35,4 @@
         return confirm("Are you sure you want to save changes?");
     }
 </script>
-
-<style>
-    .container {
-        max-width: 800px;
-    }
-
-    .card {
-        background: #ffffff;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .form-label {
-        color: #333;
-    }
-
-    input, select {
-        width: 100%;
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-        transition: all 0.3s;
-    }
-
-    input:focus, select:focus {
-        border-color: #007bff;
-        outline: none;
-        box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
-    }
-
-    .btn {
-        border-radius: 5px;
-    }
-</style>
 {% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base_login.html" %}
+{% block content %}
+<form method="post" onsubmit="return validateForm()">
+    {% csrf_token %}
+    <div class="mb-3">
+        <input type="text" name="username" id="username" class="form-control required-input" placeholder="Username (Email Prefix)" required>
+    </div>
+    <div class="mb-3 position-relative">
+        <input type="password" name="password" id="hod-password" class="form-control required-input" placeholder="Password" required>
+    </div>
+    <button type="submit" class="btn btn-custom w-100">Login</button>
+</form>
+{% endblock %}

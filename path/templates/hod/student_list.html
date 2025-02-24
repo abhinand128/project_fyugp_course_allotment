@@ -1,0 +1,107 @@
+{% extends 'HOD_base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg p-4">
+        <h2 class="mb-3 text-center">Students of {{ request.user.hod.department }}</h2>
+
+        <!-- Display Django Messages -->
+        {% if messages %}
+        <div class="container">
+            {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Search Bar -->
+        <div class="input-group mb-3">
+            <input type="text" id="searchBox" class="form-control" placeholder="Search by Name or Admission Number..." onkeyup="searchTable()">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
+
+        {% if students %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="studentTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Admission Number</th>
+                        <th>Name</th>
+                        <th>Pathway</th>
+                        <th>Semester</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr id="studentRow-{{ student.id }}">
+                        <td>{{ student.admission_number }}</td>
+                        <td>
+                            <a href="{% url 'hod_student_detail' student.id %}" class="fw-bold text-primary text-decoration-none">
+                                {{ student.name }}
+                            </a>
+                        </td>
+                        <td>{{ student.pathway }}</td>
+                        <td>{{ student.current_sem }}</td>
+                        <td>
+                            <a href="{% url 'hod_student_edit' student.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteStudent({{ student.id }}, '{{ student.name }}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center fw-bold text-danger">No students found in this department.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- JavaScript for Search Functionality & Delete Confirmation -->
+<script>
+    function searchTable() {
+        let input = document.getElementById("searchBox").value.toUpperCase();
+        let table = document.getElementById("studentTable");
+        let rows = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < rows.length; i++) {
+            let cells = rows[i].getElementsByTagName("td");
+            let admissionNumber = cells[0].innerText.toUpperCase();
+            let studentName = cells[1].innerText.toUpperCase();
+            
+            rows[i].style.display = (admissionNumber.includes(input) || studentName.includes(input)) ? "" : "none";
+        }
+    }
+
+    function deleteStudent(studentId, studentName) {
+        if (confirm(`Are you sure you want to delete ${studentName}? This action cannot be undone.`)) {
+            fetch(`/hod/students/delete/${studentId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`studentRow-${studentId}`).remove();
+                    alert("Student deleted successfully!");
+                } else {
+                    alert("Error: " + data.error);
+                }
+            })
+            .catch(error => {
+                alert("Something went wrong!");
+            });
+        }
+    }
+</script>
+{% endblock %}
