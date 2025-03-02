@@ -1,0 +1,132 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Allotment Results{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Page Title & Download Button -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold">Allotment Results</h3>
+        <a href="{% url 'download_filtered_allotments_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success shadow-sm">
+            <i class="fas fa-download"></i>
+        </a>
+    </div>
+
+    <!-- Filter Form -->
+    <form method="get">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Department</label>
+                {{ form.department|add_class:"form-select" }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Semester</label>
+                {{ form.semester|add_class:"form-select" }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Admission Year</label>
+                {{ form.admission_year|add_class:"form-select" }}
+            </div>
+            <div class="col-md-3 text-end">
+                <button type="submit" class="btn btn-primary px-4 shadow" id="applyFilterBtn">
+                    <i class="fas fa-search"></i> Search Results
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Results Table -->
+    {% if allotments %}
+    <div class="mt-4">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle text-center" id="allotmentTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th onclick="sortTable(0)" class="sortable">Admission No. <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable(1)" class="sortable">Name <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable(2)" class="sortable">Department <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable(3)" class="sortable">Pathway <i class="fas fa-sort"></i></th>
+                        <th class="sortable">Category <i class="fas fa-sort"></i></th>
+
+                        {% if form.semester.value == "1" %}
+                        <th >Paper 1 (DSC 1) <i ></i></th>
+                        <th >Paper 2 (DSC 2)<i ></i></th>
+                        <th >Paper 3 (DSC 3)<i ></i></th>
+                        <th >Paper 4 (MDC <i></i></th>
+                        {% elif form.semester.value == "2" %}
+                        <th >Paper 1 (DSC 4) <i ></i></th>
+                        <th >Paper 2 (DSC 5) <i ></i></th>
+                        <th >Paper 3 (DSC 6)<i ></i></th>
+                        <th >Paper 4 (MDC) <i></i></th>
+                        {% else %}
+                        <th class="sortable">Paper 1 <i class="fas fa-sort"></i></th>
+                        <th class="sortable">Paper 2 <i class="fas fa-sort"></i></th>
+                        <th class="sortable">Paper 3 <i class="fas fa-sort"></i></th>
+                        <th class="sortable">Paper 4 <i class="fas fa-sort"></i></th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for allotment in allotments %}
+                    <tr>
+                        <td>{{ allotment.admission_number }}</td>
+                        <td>{{ allotment.name }}</td>
+                        <td>{{ allotment.department }}</td>
+                        <td>{{ allotment.pathway }}</td>
+                        <td>{{ allotment.admission_category }}</td>
+
+                        {% if form.semester.value == "1" %}
+                        <td>{{ allotment.paper1 }}</td>
+                        <td>{{ allotment.paper2 }}</td>
+                        <td>{{ allotment.paper3 }}</td>
+                        <td>{{ allotment.paper4 }}</td>
+                        {% elif form.semester.value == "2" %}
+                        <td>{{ allotment.paper1 }}</td>
+                        <td>{{ allotment.paper2 }}</td>
+                        <td>{{ allotment.paper3 }}</td>
+                        <td>{{ allotment.paper4 }}</td>
+                        {% else %}
+                        <td>{{ allotment.paper1 }}</td>
+                        <td>{{ allotment.paper2 }}</td>
+                        <td>{{ allotment.paper3 }}</td>
+                        <td>{{ allotment.paper4 }}</td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-danger">No results found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-center text-danger fw-bold mt-4">No allotments found.</p>
+    {% endif %}
+</div>
+
+<!-- JavaScript for Sorting -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Sorting Functionality
+    function sortTable(n) {
+        let table = document.getElementById("allotmentTable");
+        let rows = Array.from(table.rows).slice(1);
+        let ascending = table.rows[0].cells[n].classList.toggle("asc");
+
+        rows.sort((rowA, rowB) => {
+            let cellA = rowA.cells[n].textContent.trim();
+            let cellB = rowB.cells[n].textContent.trim();
+
+            return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+        });
+
+        rows.forEach(row => table.appendChild(row));
+    }
+});
+</script>
+
+{% endblock %}

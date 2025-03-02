@@ -1,20 +1,26 @@
-from django.shortcuts import render, redirect,get_object_or_404
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth.forms import AuthenticationForm
-from .models import Student,Course,CoursePreference,Batch,CourseAllotment,Department,Pathway
-from .forms import StudentForm,CourseFilterForm,CourseSelectionFormSem1,CourseSelectionFormSem2,CourseForm,BatchForm,BatchFilterForm,BulkStudentUploadForm,StudentRegistrationForm,StudentEditForm,HOD,HODEditForm,HODForm
-from django.db import transaction
-from django.contrib.auth.models import User,Group
-import csv
+from django.contrib.auth.models import User, Group
+from django.http import HttpResponse, JsonResponse
+from django.core.paginator import Paginator
 from django.core.exceptions import ValidationError
-from datetime import datetime
-from django.db.models import Max, Count
-from django.http import HttpResponse
-from django.contrib.auth import logout
+from django.db import transaction
+from django.db.models import F, Max, Count
 import csv
+from datetime import datetime
+from .models import (
+    Student, Course, CoursePreference, Batch, CourseAllotment, 
+    Department, Pathway, HOD
+)
+from .forms import (
+    StudentForm, CourseFilterForm, CourseSelectionFormSem1, CourseSelectionFormSem2, 
+    CourseForm, BatchForm, BatchFilterForm, BulkStudentUploadForm, 
+    StudentRegistrationForm, StudentEditForm, HODEditForm, HODForm,StudentAllotmentFilterForm
+)
+
 
 
 def Admin_group_required(user):
@@ -25,13 +31,17 @@ def student_group_required(user):
     """Check if the user belongs to the 'Admin' group."""
     return user.groups.filter(name='Student').exists()
 
+def hod_group_required(user):
+    """Check if the user belongs to the 'Admin' group."""
+    return user.groups.filter(name='hod').exists()
 
 def allocate_courses(semester):
     with transaction.atomic():
-        # 1. Allocate Paper 1 (DSC 1)
+        # 1. Allocate Paper 1 (DSC 1) - Ensuring at least one core course is assigned
         for student in Student.objects.filter(current_sem=semester):
             allocated = False
             preferences = CoursePreference.objects.filter(student=student, paper_no=1).order_by('preference_number')
+
             for preference in preferences:
                 batch = preference.batch
                 if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
@@ -42,9 +52,14 @@ def allocate_courses(semester):
             if not allocated:
                 print(f"Warning: Student {student.admission_number} (Sem {semester}) could not be allocated Paper 1. All preferences full.")
 
-        # 2. Allocate Papers 2 & 3 Normally
-        for paper_no in range(2, 4):
+        # 2. Allocate Papers 2 & 3 based on marks
+        # Sorting conditionally based on semester
+        if semester == 2:
+            students = Student.objects.filter(current_sem=semester).order_by(F('first_sem_marks').desc(nulls_last=True))
+        else:
             students = Student.objects.filter(current_sem=semester).order_by('-normalized_marks')
+
+        for paper_no in range(2, 4):
             for student in students:
                 allocated = False
                 allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
@@ -67,18 +82,30 @@ def allocate_courses(semester):
         }
         department_quota = {dept: max(1, round(strength * 0.2)) for dept, strength in department_strengths.items()}
 
-        all_general_students = list(Student.objects.filter(current_sem=semester, admission_category="General").order_by('-normalized_marks'))
+        all_general_students = list(Student.objects.filter(current_sem=semester, admission_category="General").order_by(
+            F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
+        ))
 
         for department, total_dept_quota in department_quota.items():
             general_quota = max(1, round(total_dept_quota * 0.6))
             sc_st_quota = max(1, round(total_dept_quota * 0.2))
             other_quota = max(1, round(total_dept_quota * 0.2))
 
-            general_students = list(Student.objects.filter(current_sem=semester, department__name=department, admission_category="General").order_by('-normalized_marks')[:general_quota])
-            sc_st_students = list(Student.objects.filter(current_sem=semester, department__name=department, admission_category__in=["SC", "ST"]).order_by('-normalized_marks')[:sc_st_quota])
-            other_students = list(Student.objects.filter(current_sem=semester, department__name=department, admission_category__in=["EWS", "Sports", "Management"]).order_by('-normalized_marks')[:other_quota])
+            general_students = list(Student.objects.filter(
+                current_sem=semester, department__name=department, admission_category="General"
+            ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks')[:general_quota])
 
-            available_general_in_department = list(Student.objects.filter(current_sem=semester, department__name=department, admission_category="General").order_by('-normalized_marks'))
+            sc_st_students = list(Student.objects.filter(
+                current_sem=semester, department__name=department, admission_category__in=["SC", "ST"]
+            ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks')[:sc_st_quota])
+
+            other_students = list(Student.objects.filter(
+                current_sem=semester, department__name=department, admission_category__in=["EWS", "Sports", "Management"]
+            ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks')[:other_quota])
+
+            available_general_in_department = list(Student.objects.filter(
+                current_sem=semester, department__name=department, admission_category="General"
+            ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'))
 
             while len(sc_st_students) < sc_st_quota and available_general_in_department:
                 sc_st_students.append(available_general_in_department.pop(0))
@@ -112,6 +139,7 @@ def allocate_courses(semester):
 
                 if not allocated:
                     print(f"Warning: Student {student.admission_number} (Sem {semester}) could not be allocated Paper 4. All preferences full.")
+
 
 
     
@@ -164,7 +192,6 @@ def student_login(request):
 def admin_dashboard(request):
     return render(request, 'admin/dashboard.html', {'page_name': 'Dashboard'})
 
-
 @login_required
 @user_passes_test(student_group_required)
 def student_dashboard(request):
@@ -203,9 +230,7 @@ def view_courses_student(request):
     return render(request, 'student/view_courses_students.html', context)
 
 
-from django.shortcuts import render, redirect
-from django.http import JsonResponse
-from .models import CoursePreference, Student
+
 
 @login_required
 @user_passes_test(student_group_required) 
@@ -397,7 +422,6 @@ def manage_courses(request):
 
 @login_required
 @user_passes_test(Admin_group_required)
-
 def add_course(request):
     """Add a new course."""
     if request.method == 'POST':
@@ -589,27 +613,11 @@ def delete_batch(request, batch_id):
     batch.delete()
     return redirect('admin/manage_batches')  # Redirect to the batches page after deletion
 
-# def first_sem_allotment(request):
-#     if CourseAllotment.objects.filter(batch__course__semester=1).exists():
-#         return render(request, 'admin/first_sem_allotment.html', {'already_allocated': True})
-
-#     if request.method == 'POST':
-#         try:
-#             allocate_courses(semester=1)  # Pass semester number
-#             messages.success(request, "First semester course allotment successful!")
-#             CoursePreference.objects.filter(student__current_sem=1).delete()
-#             return redirect('view_first_sem_allotments')
-#         except Exception as e:
-#             messages.error(request, f"An error occurred during first semester allotment: {e}")
-
-#     return render(request, 'admin/first_sem_allotment.html', {'page_name': 'First Semester Allotment'})
-
 
 def get_current_academic_year():
     current_year = datetime.now().year
     next_year = current_year + 1
     return f"{current_year}-{next_year}"
-
 
 @login_required
 @user_passes_test(Admin_group_required)
@@ -834,33 +842,29 @@ def download_preferences_csv_second_sem(request):
     
     return response
 
-# def second_sem_allotment(request):
-#     if CourseAllotment.objects.filter(batch__course__semester=2).exists():
-#         print(True)
-#         return render(request, 'admin/second_sem_allotment.html', {'already_allocated': True})
 
-#     if request.method == 'POST':
-#         try:
-#             allocate_courses(semester=2)  # Pass semester number
-#             messages.success(request, "Second semester course allotment successful!")
-#             CoursePreference.objects.filter(student__current_sem=2).delete()
-#             return redirect('view_second_sem_allotments')
-#         except Exception as e:
-#             messages.error(request, f"An error occurred during second semester allotment: {e}")
+@login_required
+@user_passes_test(Admin_group_required)
+def download_allotments_csv(semester):
+    allotments = get_allotment_data(semester)
 
-#     return render(request, 'admin/second_sem_allotment.html', {'page_name': 'Second Semester Allotment'})
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="semester_{semester}_allotments.csv"'
 
+    writer = csv.writer(response)
+    writer.writerow(["Admission Number", "Name", "Department", "Category", "Pathway", "Paper 1", "Paper 2", "Paper 3", "Paper 4"])
 
-import csv
-from django.http import HttpResponse
-from django.shortcuts import render
-from .models import CourseAllotment
+    for data in allotments:
+        writer.writerow([
+            data['admission_number'], data['name'], data['department'], 
+            data['admission_category'], data['pathway'], 
+            data['paper1'], data['paper2'], data['paper3'], data['paper4']
+        ])
 
-# def view_allotments(request):
-#     if "download" in request.GET:  # Check if download request is made
-#         return download_allotments_csv()
+    return response
 
-#     allotments = CourseAllotment.objects.all()
+# def get_allotment_data(semester):
+#     allotments = CourseAllotment.objects.filter(batch__course__semester=semester)
 
 #     student_allotments = {}
 #     for allotment in allotments:
@@ -885,65 +889,16 @@ from .models import CourseAllotment
 #             'paper4': papers.get('paper4', ''),
 #         })
 
-#     return render(request, 'admin/view_allotments.html', {'allotment_data': allotment_data, 'page_name': 'View Allotments'})
+#     return allotment_data
 
-# def download_allotments_csv():
-#     allotments = CourseAllotment.objects.all()
-
-#     # Organizing allotment data
-#     student_allotments = {}
-#     for allotment in allotments:
-#         student = allotment.student
-#         if student not in student_allotments:
-#             student_allotments[student] = {
-#                 'admission_number': student.admission_number,
-#                 'name': student.name,
-#                 'department': student.department.name,
-#                 'admission_category': student.admission_category,
-#                 'pathway': student.pathway.name,
-#                 'paper1': '',
-#                 'paper2': '',
-#                 'paper3': '',
-#                 'paper4': ''
-#             }
-        
-#         paper_no = allotment.paper_no
-#         student_allotments[student][f'paper{paper_no}'] = allotment.batch.course.course_name
-
-#     # Generate CSV response
-#     response = HttpResponse(content_type='text/csv')
-#     response['Content-Disposition'] = 'attachment; filename="allotments.csv"'
-    
-#     writer = csv.writer(response)
-#     writer.writerow(['Admission Number', 'Name', 'Department', 'Admission Category', 'Pathway', 'Paper 1 (DSC 1)', 'Paper 2 (DSC 2)', 'Paper 3 (DSC 3)', 'Paper 4 (MDC)'])
-
-#     for student, data in student_allotments.items():
-#         writer.writerow([
-#             data['admission_number'], data['name'], data['department'], data['admission_category'],
-#             data['pathway'], data['paper1'], data['paper2'], data['paper3'], data['paper4']
-#         ])
-
-#     return response
-
-def download_allotments_csv(semester):
-    allotments = get_allotment_data(semester)
-
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="semester_{semester}_allotments.csv"'
-
-    writer = csv.writer(response)
-    writer.writerow(["Admission Number", "Name", "Department", "Category", "Pathway", "Paper 1", "Paper 2", "Paper 3", "Paper 4"])
-
-    for data in allotments:
-        writer.writerow([
-            data['admission_number'], data['name'], data['department'], 
-            data['admission_category'], data['pathway'], 
-            data['paper1'], data['paper2'], data['paper3'], data['paper4']
-        ])
-
-    return response
-def get_allotment_data(semester):
+def get_allotment_data(semester, department=None, admission_year=None):
     allotments = CourseAllotment.objects.filter(batch__course__semester=semester)
+
+    if department:
+        allotments = allotments.filter(student__department=department)
+
+    if admission_year:
+        allotments = allotments.filter(student__admission_year=admission_year)
 
     student_allotments = {}
     for allotment in allotments:
@@ -951,8 +906,8 @@ def get_allotment_data(semester):
         if student not in student_allotments:
             student_allotments[student] = {}
 
-        paper_no = allotment.paper_no  
-        student_allotments[student][f'paper{paper_no}'] = allotment.batch.course.course_name
+        paper_no = f'paper{allotment.paper_no}'
+        student_allotments[student][paper_no] = allotment.batch.course.course_name
 
     allotment_data = []
     for student, papers in student_allotments.items():
@@ -974,25 +929,94 @@ def get_allotment_data(semester):
 @user_passes_test(Admin_group_required)
 def view_first_sem_allotments(request):
     if "download" in request.GET:  
-        return download_allotments_csv(semester=1)  # Pass semester for filtering
+        return download_allotments_csv(semester=1)  
 
     return render(request, 'admin/view_allotments.html', {
         'allotment_data': get_allotment_data(semester=1),
-        'page_name': 'First Semester Allotments'
+        'page_name': 'First Semester Allotments',
+        'semester': 1  # Pass semester to template
     })
 
-
+@login_required
+@user_passes_test(Admin_group_required)
 def view_second_sem_allotments(request):
     if "download" in request.GET:  
-        return download_allotments_csv(semester=2)  # Pass semester for filtering
+        return download_allotments_csv(semester=2)  
 
     return render(request, 'admin/view_allotments.html', {
         'allotment_data': get_allotment_data(semester=2),
-        'page_name': 'Second Semester Allotments'
+        'page_name': 'Second Semester Allotments',
+        'semester': 2  # Pass semester to template
     })
+
+    
+@login_required
+@user_passes_test(Admin_group_required)
+def view_allotment_results(request):
+    """
+    Displays filtered allotment results based on department, semester, and admission year.
+    """
+    form = StudentAllotmentFilterForm(request.GET or None)
+    allotments = []
+
+    if form.is_valid():
+        semester = form.cleaned_data.get("semester")
+        department = form.cleaned_data.get("department")
+        admission_year = form.cleaned_data.get("admission_year")
+
+        if semester:
+            allotments = get_allotment_data(semester, department, admission_year)
+
+    return render(request, "admin/allotment_results.html", {"form": form, "allotments": allotments})
+
 
 
 @login_required
+@user_passes_test(Admin_group_required)
+def download_filtered_allotments_csv(request):
+    """
+    Generates a CSV file containing only the filtered allotment results.
+    """
+    form = StudentAllotmentFilterForm(request.GET or None)
+    allotments = []
+
+    if form.is_valid():
+        semester = form.cleaned_data.get("semester")
+        department = form.cleaned_data.get("department")
+        admission_year = form.cleaned_data.get("admission_year")
+
+        if semester:
+            allotments = get_allotment_data(semester, department, admission_year)
+
+    # Prepare CSV response
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="filtered_allotments.csv"'
+    writer = csv.writer(response)
+
+    # Write CSV headers
+    writer.writerow(["Admission No.", "Name", "Department", "Pathway", "Category", "Paper 1", "Paper 2", "Paper 3", "Paper 4"])
+
+    # Write data rows
+    for allotment in allotments:
+        writer.writerow([
+            allotment["admission_number"],
+            allotment["name"],
+            allotment["department"],
+            allotment["pathway"],
+            allotment["admission_category"],
+            allotment["paper1"],
+            allotment["paper2"],
+            allotment["paper3"],
+            allotment["paper4"],
+        ])
+
+    return response
+
+
+
+
+@login_required
+@user_passes_test(student_group_required)
 def view_student_allotment(request):
     try:
         student = request.user.student  # Fetch student linked to the logged-in user
@@ -1213,13 +1237,8 @@ def student_delete(request, student_id):
     return redirect('manage_students')  # Redirect to student list page
 
 
-
-from django.core.paginator import Paginator
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from .models import HOD
-from .forms import HODEditForm
-
+@login_required
+@user_passes_test(Admin_group_required)
 def hod_list(request):
     hods = HOD.objects.all().order_by('id')  # Fetch all HODs sorted by ID
     paginator = Paginator(hods, 10)  # Show 10 HODs per page
@@ -1229,6 +1248,8 @@ def hod_list(request):
 
     return render(request, 'admin/hod_list.html', {'hods': hods_page})
 
+@login_required
+@user_passes_test(Admin_group_required)
 def hod_edit(request, hod_id):
     hod = get_object_or_404(HOD, id=hod_id)
 
@@ -1256,11 +1277,6 @@ def hod_delete(request, hod_id):
     messages.success(request, "HOD deleted successfully!")  # Success message
     return redirect('hod_list')  # Redirect to HOD list page
 
-
-from django.contrib.auth.models import Group
-
-from django.contrib.auth.models import Group
-
 @login_required
 @user_passes_test(Admin_group_required)
 def add_hod(request):
@@ -1281,14 +1297,6 @@ def add_hod(request):
 
     return render(request, 'admin/add_hod.html', {'form': form})
 
-
-
-
-from django.contrib.auth import authenticate, login, logout
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from .models import HOD  # Import HOD model
-
 def hod_login(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -1299,7 +1307,7 @@ def hod_login(request):
         # Check if user exists and is linked to an HOD account
         if user is not None and HOD.objects.filter(user=user).exists():
             login(request, user)
-            return redirect("hod_dashboard")  # Redirect to HOD dashboard
+            return redirect("hod_student_list")  # Redirect to HOD dashboard
         else:
             messages.error(request, "Invalid credentials or not an HOD.")
 
@@ -1309,15 +1317,8 @@ def hod_logout(request):
     logout(request)
     return redirect("home")  # Redirect to home page after logout
 
-def hod_dashboard(request):
-    return render(request, "hod/hod_dashboard.html")  # Create a simple template for now
-
- 
-def hod_profile(request):
-    hod = request.user.hod
-    return render(request, "hod/hod_profile.html", {"hod": hod})
-
-
+@login_required
+@user_passes_test(hod_group_required)
 def hod_student_list(request):
     # Get students only from the HOD's department
     students = Student.objects.filter(department=request.user.hod.department).order_by('admission_number')
@@ -1326,11 +1327,14 @@ def hod_student_list(request):
 
 from django.shortcuts import get_object_or_404
 
+@login_required
+@user_passes_test(hod_group_required)
 def hod_student_detail(request, student_id):
     student = get_object_or_404(Student, id=student_id, department=request.user.hod.department)
     return render(request, 'hod/student_detail.html', {'student': student})
 
-
+@login_required
+@user_passes_test(hod_group_required)
 def hod_student_edit(request, student_id):
     student = get_object_or_404(Student, id=student_id, department=request.user.hod.department)
 
@@ -1346,7 +1350,7 @@ def hod_student_edit(request, student_id):
     return render(request, 'hod/student_edit.html', {'form': form, 'student': student})
 
 @login_required
-@user_passes_test(lambda u: u.groups.filter(name='hod').exists())  # Ensure only HODs can delete
+@user_passes_test(hod_group_required)
 def hod_student_delete(request, student_id):
     """ Delete a student via AJAX request """
     if request.method == "POST":

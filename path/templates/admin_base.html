@@ -193,6 +193,38 @@
             padding: 1rem 0;
             box-shadow: 0 0 2rem 0 rgba(33, 37, 41, .1);
         }
+
+        /* Ensure table rows and headers take only one line */
+#allotmentTable th, #allotmentTable td {
+    white-space: nowrap;  /* Prevents text from wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis;  /* Adds "..." if text is too long */
+    vertical-align: middle;  /* Centers text vertically */
+    padding: 8px;
+}
+
+/* Set a fixed height for rows to keep them uniform */
+#allotmentTable tr {
+    height: 40px;
+}
+
+/* Make sure headers align properly */
+#allotmentTable thead th {
+    vertical-align: middle;
+    text-align: center;
+}
+
+/* Optional: Adjust table font size for a more compact look */
+#allotmentTable {
+    font-size: 14px;
+}
+
+/* Prevents large column width due to long names */
+.fixed-column {
+    max-width: 150px;  
+    text-align: center;
+}
+
     </style>
     
 </head>
@@ -336,5 +368,7 @@
             });
         });
     </script>
+
+
 </body>
 </html>

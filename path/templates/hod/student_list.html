@@ -30,8 +30,11 @@
                     <tr>
                         <th>Admission Number</th>
                         <th>Name</th>
+                        <th>Phone</th>
+                        <th>Category</th>
                         <th>Pathway</th>
                         <th>Semester</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -44,16 +47,25 @@
                                 {{ student.name }}
                             </a>
                         </td>
+                        <td>{{ student.phone_number }}</td> <!-- Added Phone Number -->
+                        <td>{{ student.get_admission_category_display }}</td> <!-- Added Category -->
                         <td>{{ student.pathway }}</td>
                         <td>{{ student.current_sem }}</td>
                         <td>
-                            <a href="{% url 'hod_student_edit' student.id %}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-edit"></i> Edit
+                            {% if student.status == 1 %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td> <!-- Added Status -->
+                        <td class="text-center">
+                            <a href="{% url 'hod_student_edit' student.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                <i class="fas fa-edit"></i>
                             </a>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteStudent({{ student.id }}, '{{ student.name }}')">
-                                <i class="fas fa-trash"></i> Delete
+                            <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="deleteStudent({{ student.id }}, '{{ student.name }}')">
+                                <i class="fas fa-trash"></i>
                             </button>
-                        </td>
+                        </td> <!-- Actions with Icons -->
                     </tr>
                     {% endfor %}
                 </tbody>

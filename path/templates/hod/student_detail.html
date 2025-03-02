@@ -9,11 +9,23 @@
         <tr><th>Name:</th><td>{{ student.name }}</td></tr>
         <tr><th>Date of Birth:</th><td>{{ student.dob }}</td></tr>
         <tr><th>Email:</th><td>{{ student.email }}</td></tr>
+        <tr><th>Phone Number:</th><td>{{ student.phone_number }}</td></tr> <!-- New Field -->
         <tr><th>Department:</th><td>{{ student.department }}</td></tr>
         <tr><th>Admission Category:</th><td>{{ student.get_admission_category_display }}</td></tr>
         <tr><th>Pathway:</th><td>{{ student.pathway }}</td></tr>
         <tr><th>Current Semester:</th><td>{{ student.current_sem }}</td></tr>
         <tr><th>Semester Marks:</th><td>{{ student.first_sem_marks }}</td></tr>
+        <tr><th>Plus Two Marks (Normalized):</th><td>{{ student.normalized_marks }}</td></tr> <!-- New Field -->
+        <tr>
+            <th>Status:</th>
+            <td>
+                {% if student.status == 1 %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-danger">Inactive</span>
+                {% endif %}
+            </td>
+        </tr> <!-- New Field -->
     </table>
 
     <a href="{% url 'hod_student_edit' student.id %}" class="btn btn-primary">Edit</a>

@@ -409,11 +409,20 @@ class BulkStudentUploadForm(forms.Form):
 class StudentEditForm(forms.ModelForm):
     class Meta:
         model = Student
-        fields = ['name', 'dob', 'email', 'department', 'admission_category', 'pathway', 'current_sem','first_sem_marks']
+        fields = ['name', 'dob', 'email', 'phone_number', 'department', 'admission_category', 
+                  'pathway', 'current_sem', 'first_sem_marks', 'normalized_marks', 'status']
         widgets = {
             'dob': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'sem_marks': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter phone number'}),
+            'normalized_marks': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter Plus Two Marks'}),
+            'first_sem_marks': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'status': forms.Select(attrs={'class': 'form-control'}, choices=[(0, 'Inactive'), (1, 'Active')]),
         }
+        labels = {
+            'normalized_marks': 'Plus Two Marks (Normalized)',
+            'first_sem_marks':'First Semester Marks (SGP)'
+        }
+
 
 from django import forms
 from .models import HOD
@@ -428,3 +437,41 @@ class HODForm(forms.ModelForm):
     class Meta:
         model = HOD
         fields = ['full_name', 'email', 'phone_number', 'department']  # No need for password field
+        
+        
+
+from datetime import datetime
+
+class StudentAllotmentFilterForm(forms.Form):
+    department = forms.ModelChoiceField(
+        queryset=Department.objects.all(), required=False, label="Department"
+    )
+
+    semester = forms.ChoiceField(
+        choices=[("", "Select Semester")] + [(str(i), f"Semester {i}") for i in range(1, 9)], 
+        required=False, label="Semester"
+    )
+
+    admission_year = forms.ChoiceField(
+        choices=[], required=False, label="Admission Year"
+    )
+
+    def __init__(self, *args, **kwargs):
+            super(StudentAllotmentFilterForm, self).__init__(*args, **kwargs)
+
+    # Fetch distinct admission years from Student model
+            years = (
+            Student.objects.order_by("admission_year")
+            .values_list("admission_year", flat=True)
+            .distinct()
+            )
+
+            year_choices = [("", "Select Year")] + [(str(y), str(y)) for y in years]
+            self.fields["admission_year"].choices = year_choices
+
+            print("Generated Admission Year Choices:", year_choices)  # Debugging line
+
+
+
+
+

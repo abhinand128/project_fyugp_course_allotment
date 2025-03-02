@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="container my-5">
-    <div class="card shadow-lg p-4">
+    <div >
         <h1 class="text-center mb-4">Manage Courses</h1>
         <!-- Display Django Messages -->
 {% if messages %}
@@ -64,6 +64,7 @@
         </div>
 
         <!-- Courses Table -->
+         <div class="card shadow-lg p-4">
         <div class="table-responsive">
             <table class="table table-bordered table-hover mt-2" id="courseTable">
                 <thead class="table-dark">
@@ -109,6 +110,7 @@
                 </tbody>
             </table>
         </div>
+    </div>
     </div>
 </div>
 

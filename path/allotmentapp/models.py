@@ -28,13 +28,16 @@ class Student(models.Model):
     name = models.CharField(max_length=100)
     dob = models.DateField()
     email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=15, unique=True,default=999999999)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     admission_category = models.CharField(max_length=20, choices=CATEGORY, default='General')
+    admission_year=models.PositiveIntegerField(default=2022)
     pathway = models.ForeignKey(Pathway, on_delete=models.CASCADE)
     current_sem = models.PositiveIntegerField(default=1)
     normalized_marks = models.IntegerField()
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     first_sem_marks = models.FloatField(null=True, blank=True)
+    status = models.IntegerField(choices=[(0, 'Inactive'), (1, 'Active')], default=1)
 
     def save(self, *args, **kwargs):
         """Auto-create a Django user when saving a new student."""

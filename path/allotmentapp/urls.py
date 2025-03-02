@@ -47,12 +47,11 @@ urlpatterns = [
 
     path("hod-login/", views.hod_login, name="hod_login"),
     path("hod-logout/", views.hod_logout, name="hod_logout"),
-    path("hod-dashboard/", views.hod_dashboard, name="hod_dashboard"),
-
-    path("hod-dashboard/", views.hod_dashboard, name="hod_dashboard"),
-    path("hod-profile/", views.hod_profile, name="hod_profile"),
     path('hod/students/', views.hod_student_list, name='hod_student_list'),
     path('hod/students/<int:student_id>/', views.hod_student_detail, name='hod_student_detail'),
     path('hod/students/<int:student_id>/edit/', views.hod_student_edit, name='hod_student_edit'),
     path('students/delete/<int:student_id>/',views.hod_student_delete, name='hod_student_delete'),
+    
+    path("allotment-results/", views.view_allotment_results, name="view_allotment_results"),
+    path("download-filtered-allotments/", views.download_filtered_allotments_csv, name="download_filtered_allotments_csv"),
 ]

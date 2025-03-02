@@ -9,14 +9,17 @@
 
     <style>
         body {
-        font-family: 'Poppins', sans-serif;
-    }
-    h3 {
-        font-weight: 00;
-    }
-    label {
-        font-weight: 400;
-    }
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        h3 {
+            font-weight: 400;
+        }
+        label {
+            font-weight: 400;
+        }
         /* Navbar styling */
         .navbar {
             background-color: #343a40;
@@ -41,6 +44,7 @@
             padding: 20px 0;
             text-align: center;
             font-size: 0.9rem;
+            margin-top: auto;
         }
         footer a {
             color: #ffc107;
@@ -48,6 +52,9 @@
         }
         footer a:hover {
             text-decoration: underline;
+        }
+        .container {
+            flex: 1;
         }
     </style>
 </head>
@@ -69,7 +76,6 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#">Courses</a>
                     </li>
-                
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'logout' %}">Logout</a>
                     </li>

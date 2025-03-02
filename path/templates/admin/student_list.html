@@ -23,7 +23,7 @@
 
     <!-- Search Bar -->
     <div class="input-group mb-3">
-        <input type="text" id="searchBox" class="form-control" placeholder="Search by Name or Admission Number..." onkeyup="searchTable()">
+        <input type="text" id="searchBox" class="form-control" placeholder="Search by Name, Admission Number.." onkeyup="searchTable()">
         <span class="input-group-text"><i class="fas fa-search"></i></span>
     </div>
 
@@ -33,8 +33,11 @@
                 <tr>
                     <th>Admission Number</th>
                     <th>Name</th>
-                    <th>Email</th>
                     <th>Department</th>
+                    <th>Email</th>
+                    <th>Phone Number</th>  <!-- New Field -->
+                    
+                    <th>Status</th>
                     <th class="text-center">Actions</th>
                 </tr>
             </thead>
@@ -46,9 +49,18 @@
                         <a href="{% url 'student_detail' student.id %}" class="text-decoration-none fw-bold">
                             {{ student.name }}
                         </a>
+                    <td>{{ student.department }}</td>
                     </td>
                     <td>{{ student.email }}</td>
-                    <td>{{ student.department }}</td>
+                    <td>{{ student.phone_number }}</td>  <!-- New Field -->
+                    
+                    <td>
+                        {% if student.status == 1 %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </td>
                     <td class="text-center">
                         <a href="{% url 'student_edit' student.id %}" class="btn btn-sm btn-warning">
                             <i class="fas fa-edit"></i>
@@ -62,7 +74,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="text-center">No students available.</td>
+                    <td colspan="7" class="text-center">No students available.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -73,21 +85,26 @@
 <!-- JavaScript for Search Functionality -->
 <script>
     function searchTable() {
-        let input = document.getElementById("searchBox").value.toUpperCase();
-        let table = document.getElementById("studentTable");
-        let rows = table.getElementsByTagName("tr");
+    let input = document.getElementById("searchBox").value.toUpperCase();
+    let table = document.getElementById("studentTable");
+    let rows = table.getElementsByTagName("tr");
 
-        for (let i = 1; i < rows.length; i++) {
-            let cells = rows[i].getElementsByTagName("td");
-            let match = false;
-            for (let j = 0; j < cells.length - 1; j++) { // Skip Actions column
-                if (cells[j].innerText.toUpperCase().includes(input)) {
-                    match = true;
-                    break;
-                }
+    for (let i = 1; i < rows.length; i++) {
+        let admissionNumber = rows[i].getElementsByTagName("td")[0]; // First column (Admission Number)
+        let name = rows[i].getElementsByTagName("td")[1]; // Second column (Name)
+
+        if (admissionNumber && name) {
+            let admissionText = admissionNumber.innerText.toUpperCase();
+            let nameText = name.innerText.toUpperCase();
+
+            if (admissionText.includes(input) || nameText.includes(input)) {
+                rows[i].style.display = "";
+            } else {
+                rows[i].style.display = "none";
             }
-            rows[i].style.display = match ? "" : "none";
         }
     }
+}
+
 </script>
 {% endblock %}

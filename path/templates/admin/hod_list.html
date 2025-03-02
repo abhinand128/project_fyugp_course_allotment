@@ -31,7 +31,7 @@
         <table class="table table-hover table-bordered" id="hodTable">
             <thead class="table-dark">
                 <tr>
-                    <th>ID</th>
+                    <th> </th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Department</th>
@@ -41,7 +41,7 @@
             <tbody>
                 {% for hod in hods %}
                 <tr>
-                    <td>{{ hod.id }}</td>
+                    <td>{{ forloop.counter }}</td>
                     <td>{{ hod.full_name }}</td>
                     <td>{{ hod.email }}</td>
                     <td>{{ hod.department }}</td>
@@ -76,7 +76,7 @@
         for (let i = 1; i < rows.length; i++) {
             let cells = rows[i].getElementsByTagName("td");
             let match = false;
-            for (let j = 0; j < cells.length - 1; j++) { // Skip Actions column
+            for (let j = 1; j < cells.length - 1; j++) { // Skip numbering and Actions column
                 if (cells[j].innerText.toUpperCase().includes(input)) {
                     match = true;
                     break;

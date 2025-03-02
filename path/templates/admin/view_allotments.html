@@ -24,21 +24,24 @@
                     <tr>
                         <th>Admission Number</th>
                         <th>Name</th>
-                        <th onclick="sortTable(2)">
-                            Department <i class="fas fa-sort"></i>
-                        </th>
-                        <th onclick="sortTable(3)">
-                            Admission Category <i class="fas fa-sort"></i>
-                        </th>
-                        <th onclick="sortTable(4)">
-                            Pathway <i class="fas fa-sort"></i>
-                        </th>
-                        <th>Paper 1(DSC 1)</th>
-                        <th>Paper 2(DSC 2)</th>
-                        <th>Paper 3(DSC 3)</th>
-                        <th>Paper 4 (MDC)</th>
+                        <th onclick="sortTable(2)">Department <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable(3)">Admission Category <i class="fas fa-sort"></i></th>
+                        <th onclick="sortTable(4)">Pathway <i class="fas fa-sort"></i></th>
+                
+                        {% if semester == 1 %}
+                            <th>Paper 1 (DSC 1)</th>
+                            <th>Paper 2 (DSC 2)</th>
+                            <th>Paper 3 (DSC 3)</th>
+                            <th>Paper 4 (MDC)</th>
+                        {% elif semester == 2 %}
+                            <th>Paper 1 (DSC 4)</th>
+                            <th>Paper 2 (DSC 5)</th>
+                            <th>Paper 3 (DSC 6)</th>
+                            <th>Paper 4 (MDC)</th>
+                        {% endif %}
                     </tr>
                 </thead>
+                
                 <tbody>
                     {% for allotment in allotment_data %}
                     <tr>
