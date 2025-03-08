@@ -7,14 +7,13 @@
     document.addEventListener("DOMContentLoaded", function () {
         {% if already_allocated %}
             alert("You have already been allocated courses. You cannot submit preferences again.");
-            window.location.replace("{% url 'view_student_allotment' %}"); // Prevent back navigation
+            window.location.replace("{% url 'view_student_allotment' %}");
         {% elif already_submitted %}
             alert("You have already submitted your preferences.");
             window.location.replace("{% url 'view_preferences' %}");
         {% endif %}
     });
 </script>
-
 
 <div class="container mt-5">
     <h2 class="text-center mb-4">Course Selection</h2>
@@ -23,23 +22,22 @@
         <form method="post">
             {% csrf_token %}
 
-            <!-- DSC 1 (Major) -->
             <h3>Student Info</h3>
             <p>Name: {{ student.name }}</p>
             <p>Department: {{ student.department }}</p>
             <p>Pathway: {{ student.pathway }}</p>
             <p>Semester: {{ student.current_sem }}</p>
 
-            
-            
+            {% with dsc_offset=3 %}
+            <!-- DSC 1 -->
             <div class="p-3 mb-3 rounded" style="background-color: #d1e7dd;">
-                <h3 class="text-center fw-bold">Select Paper 1 (Major - DSC 1)</h3>
-
+                <h3 class="text-center fw-bold">
+                    Select Paper 1 (Major - DSC {{ student.current_sem|add:"0"|add:dsc_offset }})
+                </h3>
                 <div class="option-box">
                     <label for="{{ form.dsc_1.id_for_label }}">Option 1</label>
                     {{ form.dsc_1 }}
                 </div>
-
                 {% if form.dsc_1.errors %}
                 <div class="text-danger small">{{ form.dsc_1.errors|join:", " }}</div>
                 {% endif %}
@@ -47,7 +45,7 @@
 
             <!-- DSC 2 -->
             <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #cfe2ff;">
-                <h3>Select Paper 2 (Minor - DSC 2)</h3>
+                <h3>Select Paper 2 (Minor - DSC {{ student.current_sem|add:"1"|add:dsc_offset }})</h3>
                 <div class="options-container">
                     {% for field in form %}
                     {% if "dsc_2_option" in field.name %}
@@ -66,13 +64,10 @@
             <!-- DSC 3 -->
             <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #f8d7da;">
                 <h3>
-                    
-
-
                     {% if student.pathway.name == "Double Major" %}
-                    Select Paper 3 (Second Major - DSC 3)
+                        Select Paper 3 (Second Major - DSC {{ student.current_sem|add:"2"|add:dsc_offset }})
                     {% else %}
-                    Select Paper 3 (Minor - DSC 3)
+                        Select Paper 3 (Minor - DSC {{ student.current_sem|add:"2"|add:dsc_offset }})
                     {% endif %}
                 </h3>
                 <div class="options-container">
@@ -89,7 +84,6 @@
                     {% endfor %}
                 </div>
             </div>
-
 
             <!-- MDC -->
             <div class="p-3 mb-3 rounded section-box text-center" style="background-color: #fff3cd;">
@@ -108,6 +102,7 @@
                     {% endfor %}
                 </div>
             </div>
+            {% endwith %}
 
             <div class="text-center mt-4">
                 <button type="submit" class="btn btn-primary btn-lg">Submit</button>
@@ -120,18 +115,16 @@
         {% endif %}
     </div>
 </div>
+
 <style>
-    /* Ensure consistent dropdown size */
     select {
         width: 100%;
-        /* Make all dropdowns take full width */
         padding: 8px;
         border-radius: 5px;
         border: 1px solid #ced4da;
         background-color: white;
     }
 
-    /* Align labels properly */
     .option-box {
         display: flex;
         align-items: center;
@@ -145,33 +138,29 @@
         text-align: right;
     }
 
-    /* Responsive Fix: Stack labels on small screens */
     @media (max-width: 768px) {
         .option-box {
             flex-direction: column;
             align-items: flex-start;
         }
-
         .option-box label {
             text-align: left;
         }
     }
 </style>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const selects = document.querySelectorAll("select");
 
         function updateDropdowns() {
             let selectedValues = new Set();
-
-            // Collect all selected values
             selects.forEach(select => {
                 if (select.value) {
                     selectedValues.add(select.value);
                 }
             });
 
-            // Update all dropdowns
             selects.forEach(select => {
                 let currentValue = select.value;
                 Array.from(select.options).forEach(option => {
@@ -186,11 +175,8 @@
             select.addEventListener("change", updateDropdowns);
         });
 
-        updateDropdowns(); // Run initially to disable pre-selected values
+        updateDropdowns();
     });
 </script>
-
-
-
 
 {% endblock %}

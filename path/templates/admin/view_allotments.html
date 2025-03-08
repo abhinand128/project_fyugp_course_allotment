@@ -3,21 +3,40 @@
 {% block title %}View Allotments{% endblock %}
 
 {% block content %}
-<div class="container my-5">
+<div class="d-flex justify-content-between align-items-center mb-0.1">
+    <h1 class="mb-0"></h1>
+
+    <!-- Current Page & Home Link -->
+    <div>
+        {% if semester == 1 %}
+        <span class="me-3 text-muted">First Semester Allotment Result | </span>
+        {% elif semester == 2 %}
+        <span class="me-3 text-muted">Second Semester Allotment Result | </span>
+        {% endif %}
+        <a href="{% url 'admin_dashboard' %}" >
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+<div class="container-fluid p-3">
 
     <!-- Buttons Row -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <!-- Search Bar (Left) -->
-        <input type="text" id="tableSearch" class="form-control w-25" placeholder="Search...">
-
+    <div class="d-flex justify-content-between align-items-center mb-2">
+     
+        <h2 class="fw-bold">Allotment Result</h2>
         <!-- Download Button (Right) -->
         <a href="?download=true" class="btn btn-success">
             <i class="fas fa-download"></i> Download
         </a>
     </div>
+        <!-- Search Box -->
+        <div class="input-group mb-3">
+            <input type="text" id="tableSearch" class="form-control" placeholder="Search...">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
 
     {% if allotment_data %}
-    <div class="card shadow p-3">
+    <div class="card shadow-sm border-0 rounded-3 p-2">
         <div class="table-responsive">
             <table class="table table-bordered table-hover mt-3" id="allotmentTable">
                 <thead class="table-dark">

@@ -234,12 +234,13 @@
         <aside id="sidebar">
             <div class="d-flex">
                 <button class="toggle-btn" type="button">
-                    <i class="lni lni-grid-alt"></i>
+                    <i class="lni lni-menu"></i> <!-- Updated to a hamburger icon -->
                 </button>
                 <div class="sidebar-logo">
-                    <a href="#">PATH</a>
+                    <a href="#">PATH-ADMIN</a>
                 </div>
             </div>
+            
             <ul class="sidebar-nav">
                 <li class="sidebar-item">
                     <a href="{% url 'admin_dashboard' %}" class="sidebar-link">
@@ -283,7 +284,7 @@
                 </ul>
                 
             <div class="sidebar-footer">
-                <a href="{% url 'admin_logout' %}" class="sidebar-link">
+                <a href="{% url 'logout' %}" class="sidebar-link">
                     <i class="lni lni-exit"></i>
                     <span>Logout</span>
                 </a>
@@ -292,21 +293,7 @@
 
         <!-- Main Content -->
         <div class="main">
-            <nav class="navbar navbar-expand px-4 py-3">
-                <h4 class="mb-0">{% if page_name %}{{ page_name }}{% else %}Dashboard{% endif %}</h4>
-                <div class="navbar-collapse collapse">
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item dropdown">
-                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0">
-                                <img src="/api/placeholder/40/40" class="avatar img-fluid" alt="">
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-end">
-                                <a class="dropdown-item" href="{% url 'admin_logout' %}">Logout</a>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
+            
 
             <!-- Content -->
             <main class="content">
@@ -315,23 +302,7 @@
                 {% endblock %}
             </main>
 
-            <!-- Footer -->
-            <footer class="footer">
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-6">
-                            <p class="mb-0">
-                                Program Allotment and Tracking Hub (PATH) &copy;2025
-                            </p>
-                        </div>
-                        <div class="col-6 text-end">
-                            <p class="mb-0">
-                                Developed by Department of Computer Science
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+            
         </div>
     </div>
 

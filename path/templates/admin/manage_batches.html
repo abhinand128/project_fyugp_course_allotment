@@ -1,54 +1,72 @@
 {% extends 'admin_base.html' %}
 {% block title %}Manage Batches{% endblock %}
+
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-0.1">
+    <h1 class="mb-0"></h1>
 
-<div class="container my-5">
-    <div class="card shadow-lg p-4">
-        <h1 class="text-center">Manage Batches</h1><br>
-        <!-- Display Django Messages -->
-{% if messages %}
-<div class="container">
-    {% for message in messages %}
-    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Current Page & Home Link -->
+    <div>
+        <span class="me-3 text-muted">Manage Batches | </span>
+        <a href="{% url 'admin_dashboard' %}" >
+            <i class="fas fa-home"></i> Home
+        </a>
     </div>
-    {% endfor %}
 </div>
-{% endif %}
 
-        <!-- Filter & Add Batch Buttons -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterForm">
+<div class="container-fluid p-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h1 class="fw-bold">Available Batches</h1>
+        <div>
+            <button class="btn btn-primary me-2" type="button" data-bs-toggle="collapse" data-bs-target="#filterForm">
                 <i class="fas fa-filter"></i> Filter Batches
             </button>
-
             <a href="{% url 'create_batch' %}" class="btn btn-success">
-                <i class="fas fa-plus"></i> create Batch
+                <i class="lni lni-graduation"></i><sup>+</sup> Create Batch
             </a>
         </div>
+    </div>
 
-        <!-- Filter Form -->
-        <div class="collapse" id="filterForm">
-            <form method="get" class="mb-3">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label">Year:</label>
-                        {{ form.year }}
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Part:</label>
-                        {{ form.part }}
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-search"></i> Apply Filters
-                        </button>
-                    </div>
-                </div>
-            </form>
+    <!-- Display Django Messages -->
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <!-- Filter Form -->
+    <div class="collapse" id="filterForm">
+        <form method="get" class="mb-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">Year:</label>
+                    {{ form.year }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Part:</label>
+                    {{ form.part }}
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 
+    <!-- Search Box -->
+    <div class="input-group mb-3">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search batches..." onkeyup="searchTable()">
+        <span class="input-group-text"><i class="fas fa-search"></i></span>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3 p-3">
+        
         <!-- Batches Table -->
         <form method="post" action="{% url 'manage_batches' %}">
             {% csrf_token %}
@@ -66,13 +84,13 @@
                 </thead>
                 <tbody>
                     {% for batch in batches %}
-                    <tr>
+                    <tr class="batch-row">
                         <td class="text-center">
                             <input type="checkbox" name="batch_ids" value="{{ batch.id }}">
                         </td>
-                        <td>{{ batch.course }}</td>
-                        <td>{{ batch.year }}</td>
-                        <td>{{ batch.get_part_display }}</td>
+                        <td class="batch-course">{{ batch.course }}</td>
+                        <td class="batch-year">{{ batch.year }}</td>
+                        <td class="batch-part">{{ batch.get_part_display }}</td>
                         <td>
                             {% if batch.status %}
                                 <span class="badge bg-success">Active</span>
@@ -91,7 +109,6 @@
 
             <!-- Bulk Actions -->
             <div class="row mt-3">
-                <!-- Status Update -->
                 <div class="col-md-4">
                     <label for="bulk_status" class="form-label">Set Status for Selected:</label>
                     <select name="bulk_status" class="form-select">
@@ -105,8 +122,6 @@
                         <i class="fas fa-sync-alt"></i> Update
                     </button>
                 </div>
-
-                <!-- Delete Selected Batches -->
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" name="action" value="delete" class="btn btn-danger w-100"
                         onclick="return confirm('Are you sure you want to delete the selected batches?');">
@@ -118,11 +133,28 @@
     </div>
 </div>
 
-<!-- JavaScript for Select All -->
+<!-- JavaScript for Search and Select All -->
 <script>
 document.getElementById("select-all").addEventListener("change", function() {
     let checkboxes = document.querySelectorAll('input[name="batch_ids"]');
     checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+});
+
+document.getElementById("searchInput").addEventListener("keyup", function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll(".batch-row");
+
+    rows.forEach(row => {
+        let course = row.querySelector(".batch-course").textContent.toLowerCase();
+        let year = row.querySelector(".batch-year").textContent.toLowerCase();
+        let part = row.querySelector(".batch-part").textContent.toLowerCase();
+
+        if (course.includes(filter) || year.includes(filter) || part.includes(filter)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
 });
 </script>
 

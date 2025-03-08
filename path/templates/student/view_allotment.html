@@ -12,6 +12,8 @@
         <p><strong>Admission Number:</strong> {{ student.admission_number }}</p>
         <p><strong>Department:</strong> {{ student.department.name }}</p>
         <p><strong>Pathway:</strong> {{ student.pathway.name }}</p>
+        <p><strong>Semester: </strong>{{ student.current_sem }}</p>
+
 
         {% if allotment_published %}
             <h4 class="mt-4">Allotted Courses</h4>

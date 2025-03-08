@@ -3,8 +3,9 @@
 
 {% block content %}
 <div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-    <div class="card shadow-lg border-0 rounded-4 p-4" style="max-width: 500px; width: 100%;">
-        <h2 class="text-center fw-bold mb-4">Student Registration</h2>
+    <div class="card shadow-lg border-0 p-5 rounded-4" style="max-width: 1000px; width: 100%;">
+        <h2 class="text-center fw-bold mb-4 text-primary">Student Registration</h2>
+        <h2></h2>
 
         <!-- Display messages -->
         {% if messages %}
@@ -16,60 +17,136 @@
             </div>
         {% endif %}
 
-        <form method="post" class="needs-validation" novalidate>
+        <form method="post" class="needs-validation" onsubmit="return confirmSave()" novalidate>
             {% csrf_token %}
 
-            <div class="mb-3">
-                <label class="form-label fw-medium">Admission Number</label>
-                {{ form.admission_number|add_class:"form-control" }}
+            <div class="row g-4"> 
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Admission Number</label>
+                    {{ form.admission_number|add_class:"form-control shadow-sm" }}
+                    <div class="text-danger small">{{ form.admission_number.errors }}</div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Full Name</label>
+                    {{ form.name|add_class:"form-control shadow-sm" }}
+                    <div class="text-danger small">{{ form.name.errors }}</div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Date of Birth</label>
+                    {{ form.dob|add_class:"form-control shadow-sm" }}
+                    <div class="text-danger small">{{ form.dob.errors }}</div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Email</label>
+                    {{ form.email|add_class:"form-control shadow-sm" }}
+                    <div class="text-danger small">{{ form.email.errors }}</div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Phone Number</label>
+                    {{ form.phone_number|add_class:"form-control shadow-sm" }}
+                    <div class="text-danger small">{{ form.phone_number.errors }}</div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Department</label>
+                    {{ form.department|add_class:"form-select shadow-sm" }}
+                    <div class="text-danger small">{{ form.department.errors }}</div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Admission Category</label>
+                    {{ form.admission_category|add_class:"form-select shadow-sm" }}
+                    <div class="text-danger small">{{ form.admission_category.errors }}</div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Admission Year</label>
+                    {{ form.admission_year|add_class:"form-control shadow-sm" }}
+                    <div class="text-danger small">{{ form.admission_year.errors }}</div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Pathway</label>
+                    {{ form.pathway|add_class:"form-select shadow-sm" }}
+                    <div class="text-danger small">{{ form.pathway.errors }}</div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <label class="form-label fw-bold">Plustwo Marks(normalized)</label>
+                    {{ form.normalized_marks|add_class:"form-control shadow-sm" }}
+                    <div class="text-danger small">{{ form.normalized_marks.errors }}</div>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label fw-medium">Full Name</label>
-                {{ form.name|add_class:"form-control" }}
+            <div class="d-flex justify-content-center mt-4">
+                <button type="submit" class="btn btn-primary px-5 py-2 fw-bold shadow">Register</button>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label fw-medium">Date of Birth</label>
-                {{ form.dob|add_class:"form-control" }}
+            <div class="d-flex justify-content-center mt-4">
+                <button type="button" class="btn btn-outline-secondary px-5 py-2 fw-bold shadow-sm" onclick="window.location.href='{% url 'bulk_student_upload' %}'">
+                    Bulk Student Upload
+                </button>
             </div>
-
-            <div class="mb-3">
-                <label class="form-label fw-medium">Email</label>
-                {{ form.email|add_class:"form-control" }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label fw-medium">Department</label>
-                {{ form.department|add_class:"form-select" }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label fw-medium">Admission Category</label>
-                {{ form.admission_category|add_class:"form-select" }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label fw-medium">Pathway</label>
-                {{ form.pathway|add_class:"form-select" }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label fw-medium">Current Semester</label>
-                {{ form.current_sem|add_class:"form-control" }}
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label fw-medium">Marks</label>
-                {{ form.normalized_marks|add_class:"form-control" }}
-            </div>
-
-            <button type="submit" class="btn btn-primary w-100 py-2">Register</button>
-            <button type="button" class="btn btn-outline-secondary w-100 mt-2 py-2" onclick="window.location.href='{% url 'bulk_student_upload' %}'">
-                Bulk Student Upload
-            </button>
         </form>
     </div>
 </div>
+
+<script>
+    function confirmSave() {
+        return confirm("Are you sure you want to save changes?");
+    }
+</script>
+
+<style>
+    .container {
+        max-width: 1100px;
+    }
+
+    .card {
+        background: linear-gradient(135deg, #ffffff, #f8f9fa);
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-label {
+        color: #333;
+        font-weight: 600;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        transition: all 0.3s ease-in-out;
+    }
+
+    input:focus, select:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+    }
+
+    .btn {
+        border-radius: 8px;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .btn:hover {
+        transform: scale(1.05);
+    }
+
+    @media (max-width: 768px) {
+        .card {
+            padding: 20px;
+        }
+        .container {
+            max-width: 100%;
+        }
+    }
+</style>
 
 {% endblock %}

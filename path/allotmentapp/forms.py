@@ -12,10 +12,15 @@ class StudentForm(forms.ModelForm):
 class CourseFilterForm(forms.Form):
     SEMESTER_CHOICES = [("", "Select Semester")] + [(str(i), f"Semester {i}") for i in range(1, 9)]
 
-    course_type = forms.ModelChoiceField(
-        queryset=Course_type.objects.all(),
+    COURSE_TYPE_CHOICES = [
+        ("", "All Course Types"),
+        ("DSC", "DSC"),
+        ("MDC", "MDC"),
+    ]
+
+    course_type = forms.ChoiceField(
+        choices=COURSE_TYPE_CHOICES,
         required=False,
-        empty_label="All Course Types",
         widget=forms.Select(attrs={'class': 'form-select'}),
         label="Course Type"
     )
@@ -34,6 +39,7 @@ class CourseFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'}),
         label="Semester"
     )
+
 
 class CourseSelectionFormSem1(forms.Form):
     def __init__(self, *args, **kwargs):
@@ -155,9 +161,6 @@ class CourseSelectionFormSem2(forms.Form):
         super(CourseSelectionFormSem2, self).__init__(*args, **kwargs)
 
         if student:
-            print("Student passed to form:", student)
-            print("Student Department:", student.department)
-            print("Student Pathway:", student.pathway)
 
             # Fetch Semester 1 Course Allotments for this student
             sem1_allotments = CourseAllotment.objects.filter(student=student, batch__course__semester=1)
@@ -169,8 +172,6 @@ class CourseSelectionFormSem2(forms.Form):
             paper_3_department = paper_3_allotment.batch.course.department if paper_3_allotment else None
             paper_1_department = paper_1_allotment.batch.course.department if paper_1_allotment else None
 
-            print("Paper 3 Department:", paper_3_department)
-            print("Paper 1 Department:", paper_1_department)
 
             # Fetch only Semester 2 batches
             dsc_batches = Batch.objects.select_related('course', 'course__department').filter(
@@ -372,6 +373,38 @@ class BatchFilterForm(forms.Form):
 
 
 
+# class StudentRegistrationForm(forms.ModelForm):
+#     dob = forms.DateField(
+#         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+#         label="Date of Birth"
+#     )
+#     password = forms.CharField(
+#         widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'form-control'}),
+#         label="Password (Auto-filled from DOB)",
+#         required=False  # This ensures the form does not throw validation errors
+#     )
+#     normalized_marks = forms.IntegerField(
+#         widget=forms.NumberInput(attrs={'class': 'form-control'}),
+#         label="Marks"
+#     )
+
+#     class Meta:
+#         model = Student
+#         fields = ['admission_number', 'name', 'dob', 'email', 'department', 
+#                   'admission_category', 'pathway', 'current_sem', 'normalized_marks', 'password']
+
+#     def clean(self):
+#         cleaned_data = super().clean()
+#         dob = cleaned_data.get('dob')
+
+#         if dob:
+#             formatted_password = dob.strftime('%d/%m/%y')  # Correct format: DD/MM/YY
+#             cleaned_data['password'] = formatted_password  # Update password field in form
+
+#         return cleaned_data
+from django import forms
+from .models import Student
+
 class StudentRegistrationForm(forms.ModelForm):
     dob = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
@@ -380,27 +413,51 @@ class StudentRegistrationForm(forms.ModelForm):
     password = forms.CharField(
         widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'form-control'}),
         label="Password (Auto-filled from DOB)",
-        required=False  # This ensures the form does not throw validation errors
-    )
-    normalized_marks = forms.IntegerField(
-        widget=forms.NumberInput(attrs={'class': 'form-control'}),
-        label="Marks"
+        required=False
     )
 
     class Meta:
         model = Student
-        fields = ['admission_number', 'name', 'dob', 'email', 'department', 
-                  'admission_category', 'pathway', 'current_sem', 'normalized_marks', 'password']
+        fields = ['admission_number', 'name', 'dob', 'email', 'phone_number', 'department', 
+                  'admission_category', 'admission_year', 'pathway',
+                  'normalized_marks', 'password']
+        
+        widgets = {
+            'admission_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Admission Number'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full Name'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
+            'department': forms.Select(attrs={'class': 'form-select'}),
+            'admission_category': forms.Select(attrs={'class': 'form-select'}),
+            'admission_year': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Admission Year'}),
+            'pathway': forms.Select(attrs={'class': 'form-select'}),
+            
+        }
 
     def clean(self):
         cleaned_data = super().clean()
         dob = cleaned_data.get('dob')
 
         if dob:
-            formatted_password = dob.strftime('%d/%m/%y')  # Correct format: DD/MM/YY
-            cleaned_data['password'] = formatted_password  # Update password field in form
-
+            # Auto-fill password field in the form (does not store in DB)
+            formatted_password = dob.strftime('%d/%m/%y')  # DD/MM/YY format
+            self.initial['password'] = formatted_password  # Set initial value
+        
         return cleaned_data
+
+    def save(self, commit=True):
+        """Ensure password is stored in the User model if needed."""
+        instance = super().save(commit=False)
+        
+        # If instance has a related user, set password
+        if instance.user:
+            instance.user.set_password(instance.dob.strftime('%d/%m/%y'))
+            instance.user.save()
+
+        if commit:
+            instance.save()
+        return instance
+
 
 class BulkStudentUploadForm(forms.Form):
     csv_file = forms.FileField(label="Upload CSV File", help_text="Only .csv files are allowed")
@@ -469,7 +526,7 @@ class StudentAllotmentFilterForm(forms.Form):
             year_choices = [("", "Select Year")] + [(str(y), str(y)) for y in years]
             self.fields["admission_year"].choices = year_choices
 
-            print("Generated Admission Year Choices:", year_choices)  # Debugging line
+          
 
 
 

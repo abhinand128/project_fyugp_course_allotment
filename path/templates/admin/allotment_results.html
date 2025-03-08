@@ -5,14 +5,28 @@
 {% block title %}Allotment Results{% endblock %}
 
 {% block content %}
-<div class="container my-5">
+<div class="d-flex justify-content-between align-items-center mb-0.1">
+    <h1 class="mb-0"></h1>
+
+    <!-- Current Page & Home Link -->
+    <div>
+        <span class="me-3 text-muted">Allotment Results | </span>
+        <a href="{% url 'admin_dashboard' %}">
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+
+<div class="container-fluid p-3">
     <!-- Page Title & Download Button -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
         <h3 class="fw-bold">Allotment Results</h3>
         <a href="{% url 'download_filtered_allotments_csv' %}?{{ request.GET.urlencode }}" class="btn btn-success shadow-sm">
             <i class="fas fa-download"></i>
         </a>
     </div>
+
+    
 
     <!-- Filter Form -->
     <form method="get">
@@ -36,10 +50,17 @@
             </div>
         </div>
     </form>
+ 
+    </div>
 
     <!-- Results Table -->
     {% if allotments %}
-    <div class="mt-4">
+    <div class="card shadow-sm border-0 rounded-3 p-2 mt-3">
+           <!-- Search Box -->
+    <div class="input-group mb-3">
+        <input type="text" id="tableSearch" class="form-control" placeholder="Search...">
+        <span class="input-group-text"><i class="fas fa-search"></i></span>
+    </div>
         <div class="table-responsive">
             <table class="table table-hover table-bordered align-middle text-center" id="allotmentTable">
                 <thead class="table-dark">
@@ -51,15 +72,15 @@
                         <th class="sortable">Category <i class="fas fa-sort"></i></th>
 
                         {% if form.semester.value == "1" %}
-                        <th >Paper 1 (DSC 1) <i ></i></th>
-                        <th >Paper 2 (DSC 2)<i ></i></th>
-                        <th >Paper 3 (DSC 3)<i ></i></th>
-                        <th >Paper 4 (MDC <i></i></th>
+                        <th>Paper 1 (DSC 1)</th>
+                        <th>Paper 2 (DSC 2)</th>
+                        <th>Paper 3 (DSC 3)</th>
+                        <th>Paper 4 (MDC)</th>
                         {% elif form.semester.value == "2" %}
-                        <th >Paper 1 (DSC 4) <i ></i></th>
-                        <th >Paper 2 (DSC 5) <i ></i></th>
-                        <th >Paper 3 (DSC 6)<i ></i></th>
-                        <th >Paper 4 (MDC) <i></i></th>
+                        <th>Paper 1 (DSC 4)</th>
+                        <th>Paper 2 (DSC 5)</th>
+                        <th>Paper 3 (DSC 6)</th>
+                        <th>Paper 4 (MDC)</th>
                         {% else %}
                         <th class="sortable">Paper 1 <i class="fas fa-sort"></i></th>
                         <th class="sortable">Paper 2 <i class="fas fa-sort"></i></th>
@@ -76,23 +97,10 @@
                         <td>{{ allotment.department }}</td>
                         <td>{{ allotment.pathway }}</td>
                         <td>{{ allotment.admission_category }}</td>
-
-                        {% if form.semester.value == "1" %}
                         <td>{{ allotment.paper1 }}</td>
                         <td>{{ allotment.paper2 }}</td>
                         <td>{{ allotment.paper3 }}</td>
                         <td>{{ allotment.paper4 }}</td>
-                        {% elif form.semester.value == "2" %}
-                        <td>{{ allotment.paper1 }}</td>
-                        <td>{{ allotment.paper2 }}</td>
-                        <td>{{ allotment.paper3 }}</td>
-                        <td>{{ allotment.paper4 }}</td>
-                        {% else %}
-                        <td>{{ allotment.paper1 }}</td>
-                        <td>{{ allotment.paper2 }}</td>
-                        <td>{{ allotment.paper3 }}</td>
-                        <td>{{ allotment.paper4 }}</td>
-                        {% endif %}
                     </tr>
                     {% empty %}
                     <tr>
@@ -108,25 +116,32 @@
     {% endif %}
 </div>
 
-<!-- JavaScript for Sorting -->
+<!-- JavaScript for Search & Sorting -->
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    // Sorting Functionality
-    function sortTable(n) {
-        let table = document.getElementById("allotmentTable");
-        let rows = Array.from(table.rows).slice(1);
-        let ascending = table.rows[0].cells[n].classList.toggle("asc");
+document.getElementById("tableSearch").addEventListener("keyup", function() {
+    let filter = this.value.toLowerCase();
+    let rows = document.querySelectorAll("#allotmentTable tbody tr");
 
-        rows.sort((rowA, rowB) => {
-            let cellA = rowA.cells[n].textContent.trim();
-            let cellB = rowB.cells[n].textContent.trim();
-
-            return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
-        });
-
-        rows.forEach(row => table.appendChild(row));
-    }
+    rows.forEach(row => {
+        let text = row.textContent.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
+    });
 });
+
+function sortTable(n) {
+    let table = document.getElementById("allotmentTable");
+    let rows = Array.from(table.rows).slice(1);
+    let ascending = table.rows[0].cells[n].classList.toggle("asc");
+
+    rows.sort((rowA, rowB) => {
+        let cellA = rowA.cells[n].textContent.trim();
+        let cellB = rowB.cells[n].textContent.trim();
+
+        return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+    });
+
+    rows.forEach(row => table.appendChild(row));
+}
 </script>
 
 {% endblock %}

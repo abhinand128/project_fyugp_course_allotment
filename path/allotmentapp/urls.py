@@ -3,8 +3,7 @@ from allotmentapp import views
 
 urlpatterns = [
     path('', views.index, name='home'),
-    path("admin-login/", views.admin_login, name="admin_login"),
-    path("student-login/",views.student_login, name="student_login"),
+    path("login/", views.common_login, name="common_login"),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
     # path('add-student/', views.add_student, name='add_student'),
     path('student-dashboard/', views.student_dashboard, name='student_dashboard'),
@@ -12,9 +11,6 @@ urlpatterns = [
     path('course_selection/',views.course_selection, name='course_selection'),
     path('view_preferences/', views.view_preferences, name='view_preferences'),
     path('edit_preferences/', views.edit_preferences, name='edit_preferences'),
-
-    path('logout/',views.student_logout, name='logout'),
-    path('logout/',views.admin_logout, name='admin_logout'),
     path('add_course/', views.add_course, name='add_course'),
     path('manage_courses/', views.manage_courses, name='manage_courses'), 
     path('edit_course/<int:course_id>/', views.edit_course, name='edit_course'),
@@ -35,6 +31,7 @@ urlpatterns = [
     path('manage_students/', views.manage_students, name='manage_students'),
     path('register/', views.student_register, name='student_register'),
     path("bulk-upload/", views.bulk_student_upload, name="bulk_student_upload"),
+     path("bulk-upload/sample-csv/",views.download_sample_csv, name="download_sample_csv"),
     path('students/<int:student_id>/', views.student_detail, name='student_detail'),
     path('students/<int:student_id>/edit/', views.student_edit, name='student_edit'),
     path('students/<int:student_id>/delete/', views.student_delete, name='student_delete'),
@@ -45,8 +42,6 @@ urlpatterns = [
     path('hods/<int:hod_id>/delete/', views.hod_delete, name='hod_delete'),
     path('add-hod/', views.add_hod, name='add_hod'),
 
-    path("hod-login/", views.hod_login, name="hod_login"),
-    path("hod-logout/", views.hod_logout, name="hod_logout"),
     path('hod/students/', views.hod_student_list, name='hod_student_list'),
     path('hod/students/<int:student_id>/', views.hod_student_detail, name='hod_student_detail'),
     path('hod/students/<int:student_id>/edit/', views.hod_student_edit, name='hod_student_edit'),

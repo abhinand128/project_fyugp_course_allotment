@@ -5,16 +5,16 @@
 {% block title %}Second Semester Allotment{% endblock %}
 {% block content %}
 
-
 <div class="container-fluid py-4">
     <div class="card shadow-lg">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h3 class="card-title mb-0">Second Semester Course Allotment</h3>
+            <h3 class="card-title mb-0">Student Preferences for second Semester</h3>
             <a href="{% url 'download_preferences_csv_second_sem' %}" class="btn btn-success">
                 <i class="fas fa-download"></i> Download CSV
             </a>
         </div>
         <div class="card-body">
+ 
             <div class="table-responsive">
                 <table class="table table-sm table-bordered table-hover">
                     <thead class="thead-dark">
@@ -58,7 +58,7 @@
 
             <form method="post" id="allotmentForm" class="mt-4">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-primary" id="allocateBtn">
+                <button type="submit" class="btn btn-primary" id="allocateBtn" {% if students_without_preferences %}disabled{% endif %}>
                     <i class="fas fa-check-circle"></i> Allocate Courses
                 </button>
             </form>
@@ -143,9 +143,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('allotmentForm');
     const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
     const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-    
+
     form.addEventListener('submit', function(e) {
         e.preventDefault();
+
+        {% if students_without_preferences %}
+            alert("Some students have not submitted their preferences. Please resolve this before proceeding.");
+            return;
+        {% endif %}
+
         loadingModal.show();
         
         setTimeout(function() {
@@ -156,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 2000);
         }, 4000);
     });
-    
+
     {% if messages %}
         {% for message in messages %}
             if ("{{ message.tags }}" === "success") {
