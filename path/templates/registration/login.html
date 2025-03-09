@@ -1,4 +1,7 @@
+{% load static %}
+
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10,49 +13,78 @@
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <style>
         body {
-            background: white;
+            background: #121212;
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: Arial, sans-serif;
+            color: white;
         }
+        
         .login-container {
-            width: 350px;
-            background: rgba(255, 255, 255, 0.8);
+            width: 400px;
+            background: rgba(30, 30, 30, 0.9);
             padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             text-align: center;
+            position: relative;
         }
+        
+        .login-container img {
+            width: 150px;
+            margin-bottom: 15px;
+        }
+        
         .form-control {
             border-radius: 5px;
             width: 100%;
             padding: 10px;
             margin: 10px 0;
-            border: 1px solid #ccc;
+            border: 1px solid #555;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
         }
+        
+        .form-control::placeholder {
+            color: #ffdada;
+        }
+        
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border-color: white;
+            outline: none;
+        }
+        
         .btn-primary {
             width: 100%;
             background: #007bff;
             border: none;
             padding: 10px;
             border-radius: 5px;
+            font-weight: bold;
+            transition: 0.3s;
         }
+        
         .btn-primary:hover {
             background: #0056b3;
         }
+        
         .password-container {
             position: relative;
         }
+        
         .toggle-password {
             position: absolute;
             right: 10px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: gray;
+            color: white;
         }
+        
         .error-message {
             color: red;
             font-size: 14px;
@@ -62,9 +94,10 @@
 </head>
 <body>
     <div class="login-container">
+        <img src="{% static 'images/logo.png' %}" alt="Cartoon Image">
         <h3 class="mb-4">Login</h3>
         {% if messages %}
-            <div class="alert alert-danger" role="alert">
+            <div class="alert alert-danger" role="alert" id="error-message">
                 {% for message in messages %}
                     {{ message }}<br>
                 {% endfor %}
@@ -96,6 +129,11 @@
                 icon.classList.remove("fa-eye-slash");
                 icon.classList.add("fa-eye");
             }
+        }
+        
+        // Clear error messages on page refresh
+        if (performance.navigation.type === 1) {
+            history.replaceState(null, null, location.href);
         }
     </script>
 </body>

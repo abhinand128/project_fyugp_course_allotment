@@ -29,4 +29,10 @@ def replace(value, arg):
     return value.replace("_", " ") if isinstance(value, str) else value
 
 
-
+@register.filter
+def multiply(value, arg):
+    """Multiplies the given value by the provided argument."""
+    try:
+        return int(value) * int(arg)
+    except (ValueError, TypeError):
+        return ''

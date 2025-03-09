@@ -3,13 +3,25 @@
 {% block content %}
 {% load custom_filters %}
 
-<div class="container mt-5">
-    <div class="card shadow-lg p-4">
+<div class="container-fluid p-2">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h1 class="mb-0"></h1>
+
+        <!-- Current Page & Home Link -->
+        <div>
+            <span class="me-2 text-muted">View Preference | </span>
+            <a href="{% url 'student_dashboard' %}" class="text-decoration-none">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3 p-3">
         <h2 class="text-center text-black fw-bold">Your Selected Courses</h2>
 
         {% for paper_no, preferences in categorized_preferences.items %}
             {% if preferences %}
-                <h4 class="mt-4 text-black fw-semibold">
+                <h4 class="mt-3 text-black fw-semibold">
                     {% if student.current_sem == 1 %}
                         {% if paper_no == 1 %} Major Course (DSC 1)
                         {% elif paper_no == 2 %} Minor Courses (DSC 2)
@@ -26,24 +38,27 @@
                         {% endif %}
                     {% endif %}
                 </h4>
-                <table class="table table-bordered table-striped shadow">
-                    <thead class="bg-black text-white">
-                        <tr>
-                            <th>Preference</th>
-                            <th>Course Name</th>
-                            <th>Department</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for option, preference in preferences.items %}
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped shadow-sm">
+                        <thead class="table-dark">
                             <tr>
-                                <td>{{ option|replace:"_" }}</td>  <!-- Removes underscore from Option_1, Option_2 -->
-                                <td>{{ preference.batch.course.course_name }}</td>
-                                <td>{{ preference.batch.course.department }}</td>
+                                <th>Preference</th>
+                                <th>Course Name</th>
+                                <th>Department</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {% for option, preference in preferences.items %}
+                                <tr>
+                                    <td>{{ option|replace:"_" }}</td>  <!-- Removes underscore from Option_1, Option_2 -->
+                                    <td>{{ preference.batch.course.course_name }}</td>
+                                    <td>{{ preference.batch.course.department }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% endif %}
         {% endfor %}
 
@@ -52,4 +67,28 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Ensure container adapts well to mobile screens */
+    .container-fluid {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    /* Allow table to scroll horizontally on small screens */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    /* Adjust table styles for smaller screens */
+    @media (max-width: 768px) {
+        .table {
+            font-size: 14px;
+        }
+        th, td {
+            padding: 8px;
+        }
+    }
+</style>
+
 {% endblock %}

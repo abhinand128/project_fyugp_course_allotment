@@ -3,63 +3,106 @@
 {% block title %}Admin Panel - Dashboard{% endblock %}
 
 {% block content %}
-<h2 class="text-center">Dashboard</h2>
+<div class="d-flex justify-content-between align-items-center mb-0.2">
+    <h1 class="mb-0"></h1>
+
+    <!-- Current Page & Home Link -->
+    <div>
+        <span class="me-3 text-muted">Home  </span>
+        
+    </div>
+</div>
+<h2 class="text-center fw-bold mb-3">Admin Dashboard</h2>
 <div class="cards-container">
     <div class="card" onclick="window.location.href='{% url 'manage_courses' %}'">
+        <div class="icon-box"><i class="fas fa-book"></i></div>
         <h3>Manage Courses</h3>
-        <p>View, add, edit or delete courses</p>
+        <p>Create, update, and organize courses efficiently.</p>
     </div>
     <div class="card" onclick="window.location.href='{% url 'manage_batches' %}'">
+        <div class="icon-box"><i class="fas fa-graduation-cap"></i></div>
         <h3>Manage Batches</h3>
         <p>Control and manage course batches</p>
     </div>
-    <div class="card" onclick="window.location.href='#'">
+    <div class="card" onclick="window.location.href='{% url 'manage_allotment' %}'">
+        <div class="icon-box"><i class="fas fa-tasks"></i></div>
         <h3>Manage Allotments</h3>
-        <p>Allocate resources and manage student allotments</p>
+        <p>Assign students to courses based on eligibility and preferences.</p>
     </div>
-    <div class="card" onclick="alert('Navigating to Manage Students')">
+    <div class="card" onclick="window.location.href='{% url 'manage_students' %}'">
+        <div class="icon-box"><i class="fas fa-user-graduate"></i></div>
         <h3>Manage Students</h3>
-        <p>Manage student profiles, enrollments, and information</p>
+        <p>View and manage student profiles, enrollments, and academic details.</p>
     </div>
     <div class="card" onclick="window.location.href='{% url 'hod_list' %}'">
+        <div class="icon-box"><i class="fas fa-chalkboard-teacher"></i></div>
         <h3>Manage HOD</h3>
-        <p>Add, update, or remove HODs</p>
+        <p>Manage Head of Departments, assign roles, and update access.</p>
+    </div>
+    <div class="card reset-card" onclick="window.location.href='{% url 'admin_reset_password' %}'">
+        <div class="icon-box"><i class="fas fa-key icon reset-icon"></i></div>
+        <h3>Reset Password</h3>
+        <p>Reset and update your admin password securely.</p>
     </div>
 </div>
 
 <style>
-    /* Cards Section */
+    /* Professional Dashboard Layout */
     .cards-container {
-        display: flex;
-        justify-content: center;
-        gap: 30px;
-        margin: 30px auto;
-        flex-wrap: wrap;
-    }
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+    max-width: 1000px;
+    margin: auto;
+    padding: 20px;
+}
+
 
     .card {
-        border: none;
-        border-radius: 15px;
-        padding: 25px;
-        width: 260px;
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 20px;
+        width: 300px;
         text-align: center;
         cursor: pointer;
-        box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+        box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease-in-out;
-        background: linear-gradient(145deg, #ffffff, #f0f0f3);
+        border: 1px solid #000000;
     }
 
     .card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+        transform: translateY(-5px);
+        box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.15);
     }
 
+    /* Icon Styling */
+    .icon-box {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 15px;
+        border-radius: 50%;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .icon-box i {
+        font-size: 24px;
+        color: #333;
+    }
+
+    /* Typography */
     .card h3 {
-        margin-bottom: 15px;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #333;
     }
 
     .card p {
-        color: #777;
+        font-size: 14px;
+        color: #666;
     }
 </style>
 {% endblock %}

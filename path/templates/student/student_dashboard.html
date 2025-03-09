@@ -1,57 +1,86 @@
 {% extends 'student_base.html' %}
 
-{% block title %}Admin Panel - Dashboard{% endblock %}
+{% block title %}Student Dashboard{% endblock %}
 
 {% block content %}
-<h2 class="text-center">Dashboard</h2>
+<h2 class="text-center fw-bold mb-4">Student Dashboard</h2>
+
 <div class="cards-container">
     <div class="card" onclick="window.location.href='{% url 'view_courses_student' %}'">
-        <h3>View Courses</h3>
-        <p>You can see all available Courses here</p>
+        <div class="icon-box"><i class="fas fa-book-open"></i></div>
+        <h3>View Available Courses</h3>
+        <p>Browse all courses offered in the current semester</p>
     </div>
+
     <div class="card" onclick="window.location.href='{% url 'course_selection' %}'">
-        <h3>Course selection Portal</h3>
-        <p>You can Select Courses and edit preferences here</p>
+        <div class="icon-box"><i class="fas fa-edit"></i></div>
+        <h3>Course Selection</h3>
+        <p>Choose your preferred courses and set priorities</p>
     </div>
+
     <div class="card" onclick="window.location.href='{% url 'view_student_allotment' %}'">
-        <h3>View Allotment result</h3>
-        <p>You can see allocate Courses here</p>
+        <div class="icon-box"><i class="fas fa-check-circle"></i></div>
+        <h3>Allotment Results</h3>
+        <p>View the courses you have been allotted</p>
     </div>
 </div>
 
 <style>
-    /* Cards Section */
+    /* Cards Container */
     .cards-container {
         display: flex;
         justify-content: center;
-        gap: 30px;
-        margin: 30px auto;
+        gap: 20px;
         flex-wrap: wrap;
+        padding: 20px;
     }
 
     .card {
-        border: none;
+        background: #ffffff;
         border-radius: 15px;
         padding: 25px;
-        width: 260px;
+        width: 270px;
         text-align: center;
         cursor: pointer;
         box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease-in-out;
-        background: linear-gradient(145deg, #ffffff, #f0f0f3);
+        border: 1px solid #e0e0e0;
     }
 
     .card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+        transform: translateY(-5px);
+        box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.15);
     }
 
+    /* Icon Styling */
+    .icon-box {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 15px;
+        border-radius: 50%;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .icon-box i {
+        font-size: 24px;
+        color: #333;
+    }
+
+    /* Typography */
     .card h3 {
-        margin-bottom: 15px;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #333;
     }
 
     .card p {
-        color: #777;
+        font-size: 14px;
+        color: #666;
     }
 </style>
+
 {% endblock %}

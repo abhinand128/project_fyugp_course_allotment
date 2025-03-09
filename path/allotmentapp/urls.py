@@ -4,6 +4,7 @@ from allotmentapp import views
 urlpatterns = [
     path('', views.index, name='home'),
     path("login/", views.common_login, name="common_login"),
+    path('reset-password/',views.admin_reset_password, name='admin_reset_password'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
     # path('add-student/', views.add_student, name='add_student'),
     path('student-dashboard/', views.student_dashboard, name='student_dashboard'),
@@ -41,7 +42,7 @@ urlpatterns = [
     path('hods/<int:hod_id>/edit/', views.hod_edit, name='hod_edit'),
     path('hods/<int:hod_id>/delete/', views.hod_delete, name='hod_delete'),
     path('add-hod/', views.add_hod, name='add_hod'),
-
+    path('hod-reset-password/',views.hod_reset_password, name='hod_reset_password'),
     path('hod/students/', views.hod_student_list, name='hod_student_list'),
     path('hod/students/<int:student_id>/', views.hod_student_detail, name='hod_student_detail'),
     path('hod/students/<int:student_id>/edit/', views.hod_student_edit, name='hod_student_edit'),
