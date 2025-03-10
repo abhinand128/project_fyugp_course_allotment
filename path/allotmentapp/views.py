@@ -24,8 +24,6 @@ from .forms import (
     StudentRegistrationForm, StudentEditForm, HODEditForm, HODForm,StudentAllotmentFilterForm
 )
 
-
-
 def Admin_group_required(user):
     """Check if the user belongs to the 'Admin' group."""
     return user.groups.filter(name='Admin').exists()
@@ -53,10 +51,9 @@ def allocate_courses(semester):
                     break
 
             if not allocated:
-                print(f"Warning: Student {student.admission_number} (Sem {semester}) could not be allocated Paper 1. All preferences full.")
+                print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper 1. All preferences full.")
 
         # 2. Allocate Papers 2 & 3 based on marks
-        # Sorting conditionally based on semester
         if semester == 2:
             students = Student.objects.filter(current_sem=semester).order_by(F('first_sem_marks').desc(nulls_last=True))
         else:
@@ -76,7 +73,7 @@ def allocate_courses(semester):
                         break
 
                 if not allocated:
-                    print(f"Warning: Student {student.admission_number} (Sem {semester}) could not be allocated Paper {paper_no}. All preferences full.")
+                    print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper {paper_no}. All preferences full.")
 
         # 3. Allocate Paper 4 (MDC) with Department & Category Quota
         department_strengths = {
@@ -106,44 +103,28 @@ def allocate_courses(semester):
                 current_sem=semester, department__name=department, admission_category__in=["EWS", "Sports", "Management"]
             ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks')[:other_quota])
 
-            available_general_in_department = list(Student.objects.filter(
-                current_sem=semester, department__name=department, admission_category="General"
-            ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'))
-
-            while len(sc_st_students) < sc_st_quota and available_general_in_department:
-                sc_st_students.append(available_general_in_department.pop(0))
-
-            while len(other_students) < other_quota and available_general_in_department:
-                other_students.append(available_general_in_department.pop(0))
-
-            while len(sc_st_students) < sc_st_quota and all_general_students:
-                sc_st_students.append(all_general_students.pop(0))
-
-            while len(other_students) < other_quota and all_general_students:
-                other_students.append(all_general_students.pop(0))
-
-            while len(general_students) < general_quota and all_general_students:
-                general_students.append(all_general_students.pop(0))
-
             selected_students = general_students + sc_st_students + other_students
 
-            # Allocate courses for Paper 4
+            # ✅ Ensure one MDC course per student based on highest preference
             for student in selected_students:
-                allocated = False
                 allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
+                
+                # Get all MDC preferences sorted by priority
                 preferences = CoursePreference.objects.filter(student=student, paper_no=4).exclude(batch__in=allotted_batches).order_by('preference_number')
 
+                allocated = False
                 for preference in preferences:
                     batch = preference.batch
-                    if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
+                    seat_count = CourseAllotment.objects.filter(batch=batch).count()  # Optimized
+
+                    if batch.status and batch.course.seat_limit > seat_count:
                         CourseAllotment.objects.create(student=student, batch=batch, paper_no=4)
                         allocated = True
-                        break
+                        break  # ✅ Ensures exactly one MDC course per student
 
                 if not allocated:
-                    print(f"Warning: Student {student.admission_number} (Sem {semester}) could not be allocated Paper 4. All preferences full.")
-                
-                
+                    print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper 4 (MDC). All preferences full.")
+           
     
 def index(request):
     return render(request, 'registration/login.html')
@@ -217,13 +198,26 @@ def manage_allotment(request):
 def admin_dashboard(request):
     return render(request, 'admin/dashboard.html', {'page_name': 'Dashboard'})
 
-@group_required('Student')
+@group_required("Student")
+@login_required
 def student_dashboard(request):
-    # You can pass additional context like page_name if needed
-    return render(request, 'student/student_dashboard.html', {'page_name': 'Dashboard'})
+    try:
+        student = Student.objects.get(user=request.user)
+    except Student.DoesNotExist:
+        student = None  # Handle case where Student record is missing
+    
+    return render(
+        request,
+        "student/student_dashboard.html",
+        {"page_name": "Dashboard", "student": student},
+    )
 
 @group_required('Student')
 def view_courses_student(request):
+    try:
+        student = Student.objects.get(user=request.user)
+    except Student.DoesNotExist:
+        student = None  # Handle case where Student record is missing
     """Display a list of courses with optional filters."""
     form = CourseFilterForm(request.GET)  # Initialize the filter form
     courses = Course.objects.all()
@@ -244,7 +238,8 @@ def view_courses_student(request):
     context = {
         'courses': courses,
         'form': form,
-        'page_name': 'Courses',  # Passed dynamically
+        'page_name': 'Courses',
+        'student': student,
     }
     return render(request, 'student/view_courses_students.html', context)
 
@@ -306,7 +301,8 @@ def course_selection(request):
     return render(request, 'student/course_selection.html', {
         'form': form,
         'already_submitted': False,
-        'student': student
+        'student': student,
+        
     })
 
 @group_required('Student') 
@@ -756,7 +752,7 @@ def download_preferences_csv_first_sem(request):
         'Admission Number',
         'Student Name',
         'Department',
-        'Pathway'
+        'Pathway',
         'Category',
         'Normalized Marks'
     ]
@@ -800,55 +796,6 @@ def download_preferences_csv_first_sem(request):
         writer.writerow(row)
     
     return response
-
-# @group_required('Admin')
-# def second_sem_allotment(request):
-
-#     current_academic_year = get_current_academic_year()
-
-#     if CourseAllotment.objects.filter(batch__course__semester=2, batch__year=current_academic_year).exists():
-#         messages.warning(request, "Courses are already allocated for the Second semester in the current academic year!")
-#         return render(request, 'admin/second_sem_allotment.html', {'already_allocated': True})
-
-#     # Get all first semester students
-#     students = Student.objects.filter(
-#         current_sem=2
-#     ).prefetch_related(
-#         'coursepreference_set',
-#         'coursepreference_set__batch',
-#         'coursepreference_set__batch__course'
-#     ).order_by('admission_number')
-
-#     # Get unique paper numbers and their maximum preferences
-#     paper_preferences = CoursePreference.objects.filter(
-#         student__current_sem=2
-#     ).values('paper_no', 'preference_number').distinct().order_by('paper_no', 'preference_number')
-
-#     # Create a structure of paper-preference combinations
-#     paper_options = {}
-#     for pref in paper_preferences:
-#         paper_no = pref['paper_no']
-#         pref_no = pref['preference_number']
-#         if paper_no not in paper_options:
-#             paper_options[paper_no] = []
-#         paper_options[paper_no].append(pref_no)
-
-#     if request.method == 'POST':
-#         try:
-#             allocate_courses(semester=2)
-#             messages.success(request, "First semester course allotment completed successfully! Redirecting to view allotments...")
-#             CoursePreference.objects.filter(student__current_sem=2).delete()
-#             return redirect('second_sem_allotments')
-#         except Exception as e:
-#             messages.error(request, f"An error occurred during allotment: {e}")
-
-#     context = {
-#         'page_name': 'Second Semester Allotment',
-#         'students': students,
-#         'paper_options': paper_options,
-#     }
-    
-#     return render(request, 'admin/second_sem_allotment.html', context)
 
 @group_required('Admin')
 def second_sem_allotment(request):
@@ -927,7 +874,7 @@ def download_preferences_csv_second_sem(request):
         'Admission Number',
         'Student Name',
         'Department',
-        'Pathway'
+        'Pathway',
         'Category',
         'Normalized Marks'
     ]

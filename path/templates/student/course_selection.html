@@ -16,12 +16,13 @@
         {% endif %}
     });
 </script>
-<div class="d-flex justify-content-between align-items-center mb-0.1">
-    <h1 class="mb-0"></h1>
+
+<div class="d-flex justify-content-between align-items-center mb-0.1 ">
+    <span class="me-1 text-muted">Name : {{ student.name }} | Semester : {{student.current_sem}} | Department : {{student.department}} | Pathway : {{student.pathway}}  </span><h1 class="mb-0"></h1>
 
     <!-- Current Page & Home Link -->
     <div>
-        <span class="me-3 text-muted">course selection | </span>
+        <span class="me-1 text-muted"> course selection | </span>
         <a href="{% url 'student_dashboard' %}" >
             <i class="fas fa-home"></i> Home
         </a>
