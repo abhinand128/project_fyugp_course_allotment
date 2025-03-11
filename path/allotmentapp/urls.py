@@ -28,7 +28,7 @@ urlpatterns = [
     path('view_second_sem_allotments/', views.view_second_sem_allotments, name='view_second_sem_allotments'),
 
     path('view-allotment/', views.view_student_allotment, name='view_student_allotment'),
-    
+    path('student/profile/', views.student_profile, name='student_profile'),
     path('manage_students/', views.manage_students, name='manage_students'),
     path('register/', views.student_register, name='student_register'),
     path("bulk-upload/", views.bulk_student_upload, name="bulk_student_upload"),

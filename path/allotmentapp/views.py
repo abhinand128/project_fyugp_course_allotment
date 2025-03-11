@@ -211,6 +211,11 @@ def student_dashboard(request):
         "student/student_dashboard.html",
         {"page_name": "Dashboard", "student": student},
     )
+@group_required('Student')
+def student_profile(request):
+    student = Student.objects.get(user=request.user)  # Fetch the logged-in student's details
+    return render(request, 'student/profile.html', {'student': student})
+
 
 @group_required('Student')
 def view_courses_student(request):
