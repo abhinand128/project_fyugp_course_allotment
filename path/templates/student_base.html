@@ -247,15 +247,16 @@
                     <i class="lni lni-menu"></i> <!-- Updated to a hamburger icon -->
                 </button>
                 <div class="sidebar-logo">
-                    <a href="#">{{ student.name }}</a>
+                    <a href="#">NASC-PATH</a>
+        
                 </div>
             </div>
             
             <ul class="sidebar-nav">
                 <li class="sidebar-item">
                     <a href="{% url 'student_dashboard' %}" class="sidebar-link">
-                        <i class="fas fa-th-large"></i>
-                        <span>Dashboard</span>
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
                     </a>
                 </li>
                 <li class="sidebar-item">
@@ -283,17 +284,17 @@
                         <span>Allotment Result</span>
                     </a>
                 </li>
-                
+                <div class="sidebar-footer">
+                    <a href="{% url 'logout' %}" class="sidebar-link">
+                        <i class="fas fa-power-off"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
             
                 
                 </ul>
                 
-            <div class="sidebar-footer">
-                <a href="{% url 'logout' %}" class="sidebar-link">
-                    <i class="lni lni-exit"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
+            
         </aside>
 
         <!-- Main Content -->

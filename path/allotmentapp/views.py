@@ -150,7 +150,7 @@ def common_login(request):
             elif user.groups.filter(name="hod").exists():
                 login(request, user)
                 print("Redirecting to HOD dashboard")  # Debugging
-                return redirect("hod_student_list")
+                return redirect("hod_dashboard")
 
             elif user.groups.filter(name="Student").exists():
                 login(request, user)
@@ -211,6 +211,22 @@ def student_dashboard(request):
         "student/student_dashboard.html",
         {"page_name": "Dashboard", "student": student},
     )
+@group_required("hod")
+@login_required
+def hod_dashboard(request):
+    hod = None
+    try:
+        hod = HOD.objects.get(user=request.user)  # Query the HOD model
+    except HOD.DoesNotExist:
+        pass  # Handle case where no HOD record exists
+    print(hod)
+    return render(
+        request,
+        "hod/hod_dashboard.html",
+        {"page_name": "Dashboard", "hod": hod},
+    )
+
+    
 @group_required('Student')
 def student_profile(request):
     student = Student.objects.get(user=request.user)  # Fetch the logged-in student's details

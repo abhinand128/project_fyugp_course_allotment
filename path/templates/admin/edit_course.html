@@ -1,79 +1,70 @@
-
 {% extends 'admin_base.html' %}
 
 {% block title %}Edit Course{% endblock %}
     
 {% block content %}
-<div class="container my-5">
-    <div class="card shadow-lg p-4">
-        <div class="form-container">
-        <h2 class="text-center mb-4 highlight">Edit Course : {{ course.course_name }}</h2>
-        
-        <!-- Course Form -->
-        <form method="post">
-            {% csrf_token %}
-            <div class="mb-3">
-                {{ form.course_code.label_tag }}
-                {{ form.course_code }}
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {
-                        document.querySelector("#id_course_code").classList.add("form-control");
-                    });
-                </script>
-            </div>
-            <div class="mb-3">
-                {{ form.course_name.label_tag }}
-                {{ form.course_name }}
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {
-                        document.querySelector("#id_course_name").classList.add("form-control");
-                    });
-                </script>
-            </div>
-            <div class="mb-3">
-                {{ form.course_type.label_tag }}
-                {{ form.course_type }}
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {
-                        document.querySelector("#id_course_type").classList.add("form-select");
-                    });
-                </script>
-            </div>
-            <div class="mb-3">
-                {{ form.department.label_tag }}
-                {{ form.department }}
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {
-                        document.querySelector("#id_department").classList.add("form-select");
-                    });
-                </script>
-            </div>
-            <div class="mb-3">
-                {{ form.semester.label_tag }}
-                {{ form.semester }}
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {
-                        document.querySelector("#id_semester").classList.add("form-control");
-                    });
-                </script>
-            </div>
-            <div class="mb-3">
-                {{ form.seat_limit.label_tag }}
-                {{ form.seat_limit }}
-                <script>
-                    document.addEventListener("DOMContentLoaded", function() {
-                        document.querySelector("#id_seat_limit").classList.add("form-control");
-                    });
-                </script>
-            </div>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+       
+    </div>
 
-            <!-- Submit Button -->
-            <div class="d-flex justify-content-center">
-                <button type="submit" class="btn btn-warning me-2">Update Course</button>
-                <a href="{% url 'manage_courses' %}" class="btn btn-primary">View Courses</a>
-            </div>
-        </form>
+    <div class="card shadow-lg border-0 p-4">
+        <center> <h2 class="fw-bold">Edit Course: {{ course.course_name }}</h2></center>
+        <br><h2></h2><h1></h1><h1></h1>
+        <div class="card-body">
+            <form method="post" class="needs-validation" onsubmit="return confirmSave()" novalidate>
+                {% csrf_token %}
+
+                <div class="row g-4"> <!-- Ensures equal spacing between fields -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.course_code.label }}</label>
+                        {{ form.course_code }}
+                        <div class="text-danger small">{{ form.course_code.errors }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.course_name.label }}</label>
+                        {{ form.course_name }}
+                        <div class="text-danger small">{{ form.course_name.errors }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.course_type.label }}</label>
+                        {{ form.course_type }}
+                        <div class="text-danger small">{{ form.course_type.errors }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.department.label }}</label>
+                        {{ form.department }}
+                        <div class="text-danger small">{{ form.department.errors }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.semester.label }}</label>
+                        {{ form.semester }}
+                        <div class="text-danger small">{{ form.semester.errors }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">{{ form.seat_limit.label }}</label>
+                        {{ form.seat_limit }}
+                        <div class="text-danger small">{{ form.seat_limit.errors }}</div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center mt-4">
+                    <button type="submit" class="btn btn-success px-4 me-2">Update Course</button>
+                    <a href="{% url 'manage_courses' %}" class="btn btn-danger px-4">Cancel</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+
+<script>
+    function confirmSave() {
+        return confirm("Are you sure you want to save changes?");
+    }
+</script>
 {% endblock %}

@@ -57,8 +57,14 @@
                 <label class="form-label">Department</label>
                 {{ form.department|add_class:"form-select" }}
             </div>
-
-            <button type="submit" class="btn btn-success btn-custom">Register</button>
+            <div class="d-flex justify-content-between">
+                <a href="{% url 'hod_list' %}" class="btn btn-secondary btn-custom">
+                    <i class="fas fa-arrow-left"></i> Back 
+                </a>
+                <hr>
+                <button type="submit" class="btn btn-success btn-custom">Register</button>
+            </div>
+            
         </form>
     </div>
 </div>

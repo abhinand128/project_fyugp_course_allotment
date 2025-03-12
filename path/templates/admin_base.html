@@ -254,8 +254,8 @@
             <ul class="sidebar-nav">
                 <li class="sidebar-item">
                     <a href="{% url 'admin_dashboard' %}" class="sidebar-link">
-                        <i class="fas fa-th-large"></i>
-                        <span>Dashboard</span>
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
                     </a>
                 </li>
                 <li class="sidebar-item">
@@ -289,16 +289,23 @@
                         <span>Manage Hod</span>
                     </a>
                 </li>
+                <li class="sidebar-item">
+                    <a href="{% url 'admin_reset_password' %}" class="sidebar-link">
+                        <i class="fas fa-key icon reset-icon"></i>
+                        <span>Reset Password</span>
+                    </a>
+                </li>
+                <div class="sidebar-footer">
+                    <a href="{% url 'logout' %}" class="sidebar-link">
+                        <i class="fas fa-power-off"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
             
                 
                 </ul>
                 
-            <div class="sidebar-footer">
-                <a href="{% url 'logout' %}" class="sidebar-link">
-                    <i class="lni lni-exit"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
+            
         </aside>
 
         <!-- Main Content -->

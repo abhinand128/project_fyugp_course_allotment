@@ -1,35 +1,34 @@
-{% extends 'student_base.html' %}
+{% extends 'HOD_base.html' %}
 
-{% block title %}Student Dashboard{% endblock %}
+{% block title %}Hod Dashboard{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h6 class="mb-0"></h6>
     <div>
-        <span class="me-1 text-muted">Welcome back, {{ student.name }}!</span>
+        <span class="me-1 text-muted">Welcome back, {{ hod }}!</span>
         
     </div>
 </div>
-<h2 class="text-center fw-bold mb-2">Student Dashboard</h2>
-
+<h2 class="text-center fw-bold mb-2"> Dashboard</h2>
 <div class="cards-container">
-    <div class="card" onclick="window.location.href='{% url 'view_courses_student' %}'">
-        <div class="icon-box"><i class="fas fa-book-open"></i></div>
-        <h3>View Available Courses</h3>
-        <p>Browse all courses offered in the current semester</p>
+    <div class="card" onclick="window.location.href='{% url 'hod_student_list' %}'">
+        <div class="icon-box"><i class="fas fa-user-graduate"></i></div>
+        <h3>Manage Students</h3>
+        <p>View and manage student profiles and academic details.</p>
+    </div>
+    <div class="card" onclick="window.location.href='{% url 'hod_reset_password' %}'">
+        <div class="icon-box"><i class="fas fa-key icon reset-icon"></i></div>
+        <h3>Reset Password</h3>
+        <p>Reset and update your admin password securely.</p>
+    </div>
+    <div class="card" onclick="window.location.href='{% url 'logout' %}'">
+        <div class="icon-box"><i class="fas fa-power-off"></i></div>
+        <h3>Logout</h3>
+        <p>logout securely.</p>
+       
     </div>
 
-    <div class="card" onclick="window.location.href='{% url 'course_selection' %}'">
-        <div class="icon-box"><i class="fas fa-edit"></i></div>
-        <h3>Course Selection</h3>
-        <p>Choose your preferred courses and set priorities</p>
-    </div>
-
-    <div class="card" onclick="window.location.href='{% url 'view_student_allotment' %}'">
-        <div class="icon-box"><i class="fas fa-check-circle"></i></div>
-        <h3>Allotment Results</h3>
-        <p>View the courses you have been allotted</p>
-    </div>
 </div>
 
 <style>

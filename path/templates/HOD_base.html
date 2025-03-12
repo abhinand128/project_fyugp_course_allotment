@@ -250,8 +250,15 @@
                     <a href="#">PATH-HOD</a>
                 </div>
             </div>
-            
             <ul class="sidebar-nav">
+                <li class="sidebar-item">
+                    <a href="{% url 'hod_dashboard' %}" class="sidebar-link">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+            
+            
                 <li class="sidebar-item">
                     <a href="{% url 'hod_student_list' %}" class="sidebar-link">
                         <i class="fas fa-user-graduate"></i>
@@ -264,16 +271,17 @@
                         <span>Reset Password</span>
                     </a>
                 </li>
+                <div class="sidebar-footer">
+                    <a href="{% url 'logout' %}" class="sidebar-link">
+                        <i class="fas fa-power-off"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
             
                 
                 </ul>
                 
-            <div class="sidebar-footer">
-                <a href="{% url 'logout' %}" class="sidebar-link">
-                    <i class="lni lni-exit"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
+           
         </aside>
 
         <!-- Main Content -->

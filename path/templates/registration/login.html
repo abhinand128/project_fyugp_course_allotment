@@ -13,78 +13,78 @@
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <style>
         body {
-            background: #121212;
+            background: #f8f8f8; /* Light mode background */
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: Arial, sans-serif;
-            color: white;
+            color: #333;
         }
-        
+
         .login-container {
             width: 400px;
-            background: rgba(30, 30, 30, 0.9);
+            background: #ffffff; /* White card background */
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             text-align: center;
-            position: relative;
         }
-        
+
         .login-container img {
             width: 150px;
             margin-bottom: 15px;
         }
-        
+
         .form-control {
-            border-radius: 5px;
+            border-radius: 8px;
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin: 10px 0;
-            border: 1px solid #555;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
+            color: #333;
         }
-        
+
         .form-control::placeholder {
-            color: #ffdada;
+            color: #999;
         }
-        
+
         .form-control:focus {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border-color: white;
+            background: #fff;
+            color: #333;
+            border-color: #aaa;
             outline: none;
         }
-        
+
         .btn-primary {
             width: 100%;
-            background: #007bff;
+            background: #333; /* Dark gray button */
             border: none;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 12px;
+            border-radius: 8px;
             font-weight: bold;
+            color: white;
             transition: 0.3s;
         }
-        
+
         .btn-primary:hover {
-            background: #0056b3;
+            background: #555; /* Slightly lighter on hover */
         }
-        
+
         .password-container {
             position: relative;
         }
-        
+
         .toggle-password {
             position: absolute;
-            right: 10px;
+            right: 12px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: white;
+            color: #666;
         }
-        
+
         .error-message {
             color: red;
             font-size: 14px;
@@ -95,7 +95,8 @@
 <body>
     <div class="login-container">
         <img src="{% static 'images/logo.png' %}" alt="Cartoon Image">
-        <h3 class="mb-4">Login</h3>
+        <h3 class="mb-4">NASC-PATH <br><span class="me-3 text-muted">(Program allocation and tracking hub)</span></h3>
+        
         {% if messages %}
             <div class="alert alert-danger" role="alert" id="error-message">
                 {% for message in messages %}
@@ -130,7 +131,7 @@
                 icon.classList.add("fa-eye");
             }
         }
-        
+
         // Clear error messages on page refresh
         if (performance.navigation.type === 1) {
             history.replaceState(null, null, location.href);

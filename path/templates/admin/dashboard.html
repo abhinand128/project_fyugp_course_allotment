@@ -45,7 +45,18 @@
         <p>Reset and update your admin password securely.</p>
     </div>
 </div>
+<style>
+    /* Cards Container */
+    .cards-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        padding: 20px;
+    }
 
+    
+</style>
 <style>
     /* Professional Dashboard Layout */
     .cards-container {
@@ -57,22 +68,22 @@
     padding: 20px;
 }
 
-
     .card {
         background: #ffffff;
         border-radius: 12px;
-        padding: 20px;
-        width: 300px;
+        padding: 20px;  /* Increased padding */
+        width: 300px;   /* Slightly wider for better spacing */
         text-align: center;
         cursor: pointer;
-        box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.1);
+        border: 3px solid #e0e0e0; /* Thicker border */
+        box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease-in-out;
-        border: 1px solid #000000;
     }
 
     .card:hover {
         transform: translateY(-5px);
-        box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.15);
+        border-color: #333; /* Darker border on hover */
+        box-shadow: 5px 10px 25px rgba(0, 0, 0, 0.2);
     }
 
     /* Icon Styling */
@@ -85,6 +96,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        border: 2px solid #ddd; /* Added a border around the icon */
     }
 
     .icon-box i {
@@ -95,7 +107,7 @@
     /* Typography */
     .card h3 {
         font-size: 18px;
-        font-weight: 600;
+        font-weight: 700;  /* Made text bolder */
         margin-bottom: 10px;
         color: #333;
     }

@@ -3,10 +3,11 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Edit HOD Details</h2>
+       
     </div>
 
     <div class="card shadow-lg border-0 p-4">
+        <center> <h2 class="fw-bold">Edit HOD Details</h2></center>
         <div class="card-body">
             <form method="post" class="needs-validation" onsubmit="return confirmSave()" novalidate>
                 {% csrf_token %}
@@ -15,8 +16,24 @@
                     {% for field in form %}
                     <div class="col-md-6 mb-3">
                         <label class="form-label fw-bold">{{ field.label }}</label>
-                        {{ field }}
-                        <div class="text-danger small">{{ field.errors }}</div>
+                        
+                        {% if field.field.widget.input_type == "select" %}
+                            <!-- Bootstrap Dropdown -->
+                            <select name="{{ field.name }}" class="form-select" required>
+                                {% for option in field.field.choices %}
+                                    <option value="{{ option.0 }}" {% if field.value == option.0 %}selected{% endif %}>
+                                        {{ option.1 }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <!-- Bootstrap Styled Input -->
+                            <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" class="form-control" value="{{ field.value|default_if_none:'' }}" required>
+                        {% endif %}
+
+                        <div class="invalid-feedback">
+                            {{ field.errors|join:", " }}
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -31,8 +48,24 @@
 </div>
 
 <script>
+    // Confirm before submitting form
     function confirmSave() {
         return confirm("Are you sure you want to save changes?");
     }
+
+    // Enable Bootstrap validation styling
+    (function () {
+        'use strict';
+        var forms = document.querySelectorAll('.needs-validation');
+        Array.prototype.slice.call(forms).forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
 </script>
 {% endblock %}
