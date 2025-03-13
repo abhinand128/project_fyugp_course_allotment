@@ -219,13 +219,32 @@ def hod_dashboard(request):
         hod = HOD.objects.get(user=request.user)  # Query the HOD model
     except HOD.DoesNotExist:
         pass  # Handle case where no HOD record exists
-    print(hod)
+
     return render(
         request,
         "hod/hod_dashboard.html",
         {"page_name": "Dashboard", "hod": hod},
     )
+@group_required('Student')
+def student_reset_password(request):
+    # Ensure only users in the "hod" group can access
+    if not request.user.groups.filter(name='Student').exists():
+        messages.error(request, "You are not authorized to access this page.")
+        return redirect('home')  # Redirect back to dashboard
 
+    if request.method == 'POST':
+        form = PasswordChangeForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            form.save()
+            update_session_auth_hash(request, form.user)  # Keep user logged in
+            messages.success(request, "Your password has been successfully updated.")
+            return redirect('home')  # Redirect after success
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = PasswordChangeForm(user=request.user)
+
+    return render(request, 'student/student_reset_password.html', {'form': form})
     
 @group_required('Student')
 def student_profile(request):
@@ -1470,6 +1489,7 @@ def hod_student_delete(request, student_id):
     
     return JsonResponse({"success": False, "error": "Invalid request method"})
 
+@group_required('hod')
 def hod_reset_password(request):
     # Ensure only users in the "hod" group can access
     if not request.user.groups.filter(name='hod').exists():

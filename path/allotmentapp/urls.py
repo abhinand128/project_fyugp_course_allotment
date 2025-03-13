@@ -5,6 +5,7 @@ urlpatterns = [
     path('', views.index, name='home'),
     path("login/", views.common_login, name="common_login"),
     path('reset-password/',views.admin_reset_password, name='admin_reset_password'),
+    path('reset-password-student/',views.student_reset_password, name='student_reset_password'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
     # path('add-student/', views.add_student, name='add_student'),
     path('student-dashboard/', views.student_dashboard, name='student_dashboard'),

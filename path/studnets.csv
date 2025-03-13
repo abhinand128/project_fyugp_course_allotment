@@ -1,0 +1,13 @@
+Admission Number,Name,Date of Birth,Email,Phone Number,Department,Admission Category,Admission Year,Pathway,Current Semester,PlusTwo Marks(normalized)
+1001,Ananya Sharma,01/01/2001,ananya.sharma@example.com,9876543210,Botany,General,2022,Single Major,1,87
+1002,Rahul Menon,01/01/2001,rahul.menon@example.com,9876543211,Chemistry,SC,2022,Double Major,1,75
+1003,Neha Gupta,01/01/2001,neha.gupta@example.com,9876543212,Commerce,ST,2022,Major with Double Minor,2,82
+1004,Amit Verma,01/01/2001,amit.verma@example.com,9876543213,Economics,PWD,2022,Major with Single Minor,1,90
+1005,Priya Iyer,01/01/2001,priya.iyer@example.com,9876543214,English,EWS,2022,Single Major,2,78
+1006,Rohan Das,01/01/2001,rohan.das@example.com,9876543215,Hindi,Sports,2022,Double Major,1,85
+1007,Simran Kaur,01/01/2001,simran.kaur@example.com,9876543216,History,Management,2022,Major with Double Minor,2,88
+1008,Vikram Singh,01/01/2001,vikram.singh@example.com,9876543217,Malayalam,General,2022,Major with Single Minor,1,92
+1009,Meera Nair,01/01/2001,meera.nair@example.com,9876543218,Mathematics,SC,2022,Single Major,2,80
+1010,Arjun Kapoor,01/01/2001,arjun.kapoor@example.com,9876543219,Physics,ST,2022,Double Major,1,76
+1011,Sanya Bose,01/01/2001,sanya.bose@example.com,9876543220,Statistics,PWD,2022,Major with Double Minor,2,89
+1012,Karan Mehta,01/01/2001,karan.mehta@example.com,9876543221,Zoology,EWS,2022,Major with Single Minor,1,95

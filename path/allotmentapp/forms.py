@@ -298,23 +298,6 @@ class CourseForm(forms.ModelForm):
         model = Course
         fields = ['course_code', 'course_name', 'course_type', 'department', 'semester', 'seat_limit']
 
-# class CourseForm(forms.ModelForm):
-#     class Meta:
-#         model = Course
-#         fields = ['course_code', 'course_name', 'course_type', 'department', 'semester', 'seat_limit']
-
-#     def clean(self):
-#         cleaned_data = super().clean()
-#         course_code = cleaned_data.get("course_code")
-#         course_name = cleaned_data.get("course_name")
-
-#         if Course.objects.filter(course_code=course_code).exists():
-#             raise ValidationError({'course_code': "A course with this code already exists."})
-
-#         if Course.objects.filter(course_name=course_name).exists():
-#             raise ValidationError({'course_name': "A course with this name already exists."})
-
-#         return cleaned_data
 
 class BatchForm(forms.ModelForm):
     # Generate year choices dynamically (from current year onwards)
@@ -371,37 +354,6 @@ class BatchFilterForm(forms.Form):
         years = Batch.objects.values_list('year', flat=True).distinct()
         self.fields['year'].choices = [('', 'Select Year')] + [(year, year) for year in years]
 
-
-
-# class StudentRegistrationForm(forms.ModelForm):
-#     dob = forms.DateField(
-#         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-#         label="Date of Birth"
-#     )
-#     password = forms.CharField(
-#         widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'form-control'}),
-#         label="Password (Auto-filled from DOB)",
-#         required=False  # This ensures the form does not throw validation errors
-#     )
-#     normalized_marks = forms.IntegerField(
-#         widget=forms.NumberInput(attrs={'class': 'form-control'}),
-#         label="Marks"
-#     )
-
-#     class Meta:
-#         model = Student
-#         fields = ['admission_number', 'name', 'dob', 'email', 'department', 
-#                   'admission_category', 'pathway', 'current_sem', 'normalized_marks', 'password']
-
-#     def clean(self):
-#         cleaned_data = super().clean()
-#         dob = cleaned_data.get('dob')
-
-#         if dob:
-#             formatted_password = dob.strftime('%d/%m/%y')  # Correct format: DD/MM/YY
-#             cleaned_data['password'] = formatted_password  # Update password field in form
-
-#         return cleaned_data
 from django import forms
 from .models import Student
 
@@ -466,7 +418,7 @@ class BulkStudentUploadForm(forms.Form):
 class StudentEditForm(forms.ModelForm):
     class Meta:
         model = Student
-        fields = ['name', 'dob', 'email', 'phone_number', 'department', 'admission_category', 
+        fields = ['admission_number','name', 'dob', 'email', 'phone_number', 'department', 'admission_category', 
                   'pathway', 'current_sem', 'first_sem_marks', 'normalized_marks', 'status']
         widgets = {
             'dob': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),

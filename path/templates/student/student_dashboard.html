@@ -30,6 +30,11 @@
         <h3>Allotment Results</h3>
         <p>View the courses you have been allotted</p>
     </div>
+    <div class="card" onclick="window.location.href='{% url 'student_reset_password' %}'">
+        <div class="icon-box"><i class="fas fa-key icon reset-icon"></i></div>
+        <h3>Reset Password</h3>
+        <p>Reset and update your password securely.</p>
+    </div>
 </div>
 
 <style>
@@ -45,8 +50,8 @@
     .card {
         background: #ffffff;
         border-radius: 15px;
-        padding: 30px;  /* Increased padding */
-        width: 280px;   /* Slightly wider for better spacing */
+        padding: 25px;  /* Increased padding */
+        width: 260px;   /* Slightly wider for better spacing */
         text-align: center;
         cursor: pointer;
         border: 3px solid #e0e0e0; /* Thicker border */
