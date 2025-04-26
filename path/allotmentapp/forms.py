@@ -1,22 +1,53 @@
 from django import forms
-from .models import Student,Course,Course_type,Department,Batch,CourseAllotment,AllocationSettings
 from django.core.exceptions import ValidationError
-from datetime import datetime
+from django.core.validators import MinValueValidator, MaxValueValidator, RegexValidator,FileExtensionValidator
+from datetime import date, datetime
+from .models import (
+    Student, Course, Course_type, Department, Batch, 
+    CourseAllotment, AllocationSettings, HOD
+)
 
 class StudentForm(forms.ModelForm):
+    dob = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        validators=[lambda value: ValidationError("Date of birth cannot be in the future") 
+                    if value > date.today() else None]
+    )
+    
+    admission_year = forms.IntegerField(
+        validators=[
+            MinValueValidator(2000, message="Admission year must be 2000 or later"),
+            MaxValueValidator(
+                lambda: date.today().year,
+                message="Admission year cannot be in the future"
+            )
+        ]
+    )
+
     class Meta:
         model = Student
-        fields = ['admission_number', 'name', 'dob', 'email', 'department', 'admission_category', 'pathway', 'current_sem', 'normalized_marks']
-
+        fields = [
+            'admission_number', 'name', 'dob', 'email', 'department', 
+            'admission_category', 'pathway', 'current_sem', 'normalized_marks'
+        ]
+        widgets = {
+            'admission_number': forms.TextInput(attrs={
+                'pattern': '[A-Za-z0-9]+',
+                'title': 'Only alphanumeric characters allowed'
+            }),
+            'normalized_marks': forms.NumberInput(attrs={
+                'min': 0,
+                'max': 100
+            }),
+            'current_sem': forms.NumberInput(attrs={
+                'min': 1,
+                'max': 8
+            })
+        }
 
 class CourseFilterForm(forms.Form):
-    SEMESTER_CHOICES = [("", "Select Semester")] + [(str(i), f"Semester {i}") for i in range(1, 9)]
-
-    COURSE_TYPE_CHOICES = [
-        ("", "All Course Types"),
-        ("DSC", "DSC"),
-        ("MDC", "MDC"),
-    ]
+    SEMESTER_CHOICES = [("", "Select Semester")] + [(i, f"Semester {i}") for i in range(1, 9)]
+    COURSE_TYPE_CHOICES = [("", "All Course Types"), ("DSC", "DSC"), ("MDC", "MDC")]
 
     course_type = forms.ChoiceField(
         choices=COURSE_TYPE_CHOICES,
@@ -40,280 +71,176 @@ class CourseFilterForm(forms.Form):
         label="Semester"
     )
 
-
-class CourseSelectionFormSem1(forms.Form):
+class BaseCourseSelectionForm(forms.Form):
+    """Base class with common functionality for semester selection forms"""
+    
     def __init__(self, *args, **kwargs):
-        student = kwargs.pop('student', None)
-        super(CourseSelectionFormSem1, self).__init__(*args, **kwargs)
+        self.student = kwargs.pop('student', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.student:
+            self.setup_fields()
+            self.order_fields(self.get_field_order())
 
-        if student:
-            print("Student passed to form:", student)
-            print("Student Department:", student.department)
-            print("Student Pathway:", student.pathway)
+    def setup_fields(self):
+        """Setup form fields based on student pathway"""
+        raise NotImplementedError("Subclasses must implement this method")
 
-            
-            # Fetch only Semester 1 batches
-            dsc_batches = Batch.objects.select_related('course', 'course__department').filter(
-                course__course_type__name__startswith='DSC',
-                course__semester=1  # Ensuring the course is for Semester 1
-            )
-            mdc_batches = Batch.objects.select_related('course', 'course__department').filter(
-                course__course_type__name__startswith='MDC',
-                course__semester=1  # Ensuring the course is for Semester 1
-            )
+    def get_field_order(self):
+        """Define the order of fields in the form"""
+        raise NotImplementedError("Subclasses must implement this method")
 
-            # Pathway-specific logic
-            if student.pathway.name == "Single Major":
-                dsc_1_batches = dsc_batches.filter(course__department=student.department)
-                dsc_2_batches = dsc_batches.exclude(course__department=student.department)
-                dsc_3_batches = dsc_batches.exclude(course__department=student.department)
-                mdc_filtered_batches = mdc_batches.exclude(course__department=student.department)
+    @staticmethod
+    def batch_label(batch):
+        """Standard label format for batch choices"""
+        return f"{batch.course.department.name} - {batch.course.course_name}"
 
-            elif student.pathway.name == "Double Major":
-                dsc_1_batches = dsc_batches.filter(course__department=student.department)
-                dsc_2_batches = dsc_batches.filter(course__department=student.department)  # Filter by same department
-                dsc_3_batches = dsc_batches.exclude(course__department=student.department)
-                mdc_filtered_batches = mdc_batches.exclude(course__department=student.department)
+    def create_batch_field(self, name, queryset, label='', required=True):
+        """Helper method to create consistent batch selection fields"""
+        self.fields[name] = forms.ModelChoiceField(
+            queryset=queryset,
+            required=required,
+            label=label,
+            empty_label="Select an option",
+            widget=forms.Select(attrs={'class': 'form-control'})
+        )
+        self.fields[name].label_from_instance = self.batch_label
 
-            else:  # Single Major with Single/Double Minor
-                dsc_1_batches = dsc_batches.filter(course__department=student.department)
-                dsc_2_batches = dsc_batches.exclude(course__department=student.department)
-                dsc_3_batches = dsc_batches.exclude(course__department=student.department)
-                mdc_filtered_batches = mdc_batches.exclude(course__department=student.department)
+class CourseSelectionFormSem1(BaseCourseSelectionForm):
+    def setup_fields(self):
+        # Fetch Semester 1 batches
+        dsc_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name__startswith='DSC',
+            course__semester=1
+        )
+        mdc_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name__startswith='MDC',
+            course__semester=1
+        )
 
-            # Define field order
-            field_order = []
+        # Pathway-specific filtering
+        if self.student.pathway.name == "Single Major":
+            dsc_1_batches = dsc_batches.filter(course__department=self.student.department)
+            dsc_2_batches = dsc_batches.exclude(course__department=self.student.department)
+            dsc_3_batches = dsc_batches.exclude(course__department=self.student.department)
+            mdc_filtered_batches = mdc_batches.exclude(course__department=self.student.department)
+        elif self.student.pathway.name == "Double Major":
+            dsc_1_batches = dsc_batches.filter(course__department=self.student.department)
+            dsc_2_batches = dsc_batches.filter(course__department=self.student.department)
+            dsc_3_batches = dsc_batches.exclude(course__department=self.student.department)
+            mdc_filtered_batches = mdc_batches.exclude(course__department=self.student.department)
+        else:  # Single/Double Minor
+            dsc_1_batches = dsc_batches.filter(course__department=self.student.department)
+            dsc_2_batches = dsc_batches.exclude(course__department=self.student.department)
+            dsc_3_batches = dsc_batches.exclude(course__department=self.student.department)
+            mdc_filtered_batches = mdc_batches.exclude(course__department=self.student.department)
 
-            # Helper function to customize choice labels
-            def batch_label(batch):
-                return f"{batch.course.department.name} - {batch.course.course_name}"
+        # Create fields
+        self.create_batch_field('dsc_1', dsc_1_batches, 'DSC 1')
+        
+        # DSC 2 options
+        option_count = dsc_2_batches.count() if self.student.pathway.name == "Double Major" else 3
+        for i in range(1, option_count + 1):
+            self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'DSC 2 Option {i}')
 
-            # Add form field for DSC 1 (single selection)
-            self.fields['dsc_1'] = forms.ModelChoiceField(
-                queryset=dsc_1_batches,
-                required=True,
-                label='',
-                empty_label="Select an option",
-            )
-            self.fields['dsc_1'].label_from_instance = batch_label
-            field_order.append('dsc_1')
+        # DSC 3 options
+        for i in range(1, 4):
+            self.create_batch_field(f'dsc_3_option_{i}', dsc_3_batches, f'DSC 3 Option {i}')
 
-            # Add DSC 2 options (same for all pathways, but dynamic in Double Major)
-            if student.pathway.name == "Double Major":
-                dsc_2_count = dsc_2_batches.count()
-                for i in range(1, dsc_2_count):
-                    field_name = f'dsc_2_option_{i}'
-                    self.fields[field_name] = forms.ModelChoiceField(
-                        queryset=dsc_2_batches,
-                        required=True,
-                        label=f'Option {i}',
-                        empty_label="Select an option",
-                    )
-                    self.fields[field_name].label_from_instance = batch_label
-                    field_order.append(field_name)
-            else:
-                # For other pathways, just use all available DSC 2 batches (without department filtering)
-                for i in range(1, 4):
-                    field_name = f'dsc_2_option_{i}'
-                    self.fields[field_name] = forms.ModelChoiceField(
-                        queryset=dsc_2_batches,
-                        required=True,
-                        label=f'Option {i}',
-                        empty_label="Select an option",
-                    )
-                    self.fields[field_name].label_from_instance = batch_label
-                    field_order.append(field_name)
+        # MDC options
+        for i in range(1, mdc_filtered_batches.count() + 1):
+            self.create_batch_field(f'mdc_option_{i}', mdc_filtered_batches, f'MDC Option {i}')
 
-            # Add DSC 3 options (same for all pathways)
-            for i in range(1, 4):
-                field_name = f'dsc_3_option_{i}'
-                self.fields[field_name] = forms.ModelChoiceField(
-                    queryset=dsc_3_batches,
-                    required=True,
-                    label=f'Option {i}',
-                    empty_label="Select an option",
-                )
-                self.fields[field_name].label_from_instance = batch_label
-                field_order.append(field_name)
+    def get_field_order(self):
+        return ['dsc_1'] + \
+               [f'dsc_2_option_{i}' for i in range(1, 4)] + \
+               [f'dsc_3_option_{i}' for i in range(1, 4)] + \
+               [f'mdc_option_{i}' for i in range(1, 6)]  # Assuming max 5 MDC options
 
-            # Dynamically generate MDC options based on available courses
-            mdc_count = mdc_filtered_batches.count()
-            for i in range(1, mdc_count + 1):
-                field_name = f'mdc_option_{i}'
-                self.fields[field_name] = forms.ModelChoiceField(
-                    queryset=mdc_filtered_batches,
-                    required=True,
-                    label=f'Option {i}',
-                    empty_label="Select an option",
-                )
-                self.fields[field_name].label_from_instance = batch_label
-                field_order.append(field_name)
+class CourseSelectionFormSem2(BaseCourseSelectionForm):
+    def setup_fields(self):
+        # Get previous semester allotments
+        sem1_allotments = CourseAllotment.objects.filter(
+            student=self.student, 
+            batch__course__semester=1
+        )
+        paper_3_dept = sem1_allotments.filter(paper_no=3).first().batch.course.department if sem1_allotments.filter(paper_no=3).exists() else None
+        paper_1_dept = sem1_allotments.filter(paper_no=1).first().batch.course.department if sem1_allotments.filter(paper_no=1).exists() else None
 
-            # Ensure the form fields appear in the specified order
-            self.order_fields(field_order)
+        # Fetch Semester 2 batches
+        dsc_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name__startswith='DSC',
+            course__semester=2
+        )
+        mdc_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name__startswith='MDC',
+            course__semester=2
+        )
 
-        # Debug: Print final field order
-        print("Final Field Order:", list(self.fields.keys()))
+        # Pathway-specific filtering
+        if self.student.pathway.name == "Double Major":
+            dsc_1_batches = dsc_batches.filter(course__department=paper_3_dept)
+            dsc_2_batches = dsc_batches.filter(course__department=paper_3_dept)
+            dsc_3_batches = dsc_batches.filter(course__department=paper_1_dept)
+        else:
+            dsc_1_batches = dsc_batches.filter(course__department=self.student.department)
+            dsc_2_batches = dsc_batches.exclude(course__department=self.student.department)
+            dsc_3_batches = dsc_batches.exclude(course__department=self.student.department)
+        
+        mdc_filtered_batches = mdc_batches.exclude(course__department=self.student.department)
 
-class CourseSelectionFormSem2(forms.Form):
-    def __init__(self, *args, **kwargs):
-        student = kwargs.pop('student', None)
-        super(CourseSelectionFormSem2, self).__init__(*args, **kwargs)
+        # Create fields
+        self.create_batch_field('dsc_1', dsc_1_batches, 'DSC 1')
+        
+        # DSC 2 options
+        option_count = dsc_2_batches.count() if self.student.pathway.name == "Double Major" else 3
+        for i in range(1, option_count + 1):
+            self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'DSC 2 Option {i}')
 
-        if student:
+        # DSC 3 options
+        option_count = dsc_3_batches.count() if self.student.pathway.name == "Double Major" else 3
+        for i in range(1, option_count + 1):
+            self.create_batch_field(f'dsc_3_option_{i}', dsc_3_batches, f'DSC 3 Option {i}')
 
-            # Fetch Semester 1 Course Allotments for this student
-            sem1_allotments = CourseAllotment.objects.filter(student=student, batch__course__semester=1)
+        # MDC options
+        for i in range(1, mdc_filtered_batches.count() + 1):
+            self.create_batch_field(f'mdc_option_{i}', mdc_filtered_batches, f'MDC Option {i}')
 
-            # Identify the department of Paper 3 and Paper 1
-            paper_3_allotment = sem1_allotments.filter(paper_no=3).first()
-            paper_1_allotment = sem1_allotments.filter(paper_no=1).first()
+    def get_field_order(self):
+        return ['dsc_1'] + \
+               [f'dsc_2_option_{i}' for i in range(1, 4)] + \
+               [f'dsc_3_option_{i}' for i in range(1, 4)] + \
+               [f'mdc_option_{i}' for i in range(1, 6)]
 
-            paper_3_department = paper_3_allotment.batch.course.department if paper_3_allotment else None
-            paper_1_department = paper_1_allotment.batch.course.department if paper_1_allotment else None
-
-
-            # Fetch only Semester 2 batches
-            dsc_batches = Batch.objects.select_related('course', 'course__department').filter(
-                course__course_type__name__startswith='DSC',
-                course__semester=2  # Ensuring the course is for Semester 2
-            )
-            mdc_batches = Batch.objects.select_related('course', 'course__department').filter(
-                course__course_type__name__startswith='MDC',
-                course__semester=2  # Ensuring the course is for Semester 2
-            )
-
-            # Pathway-specific logic
-            if student.pathway.name == "Single Major":
-                dsc_1_batches = dsc_batches.filter(course__department=student.department)
-                dsc_2_batches = dsc_batches.exclude(course__department=student.department)
-                dsc_3_batches = dsc_batches.exclude(course__department=student.department)
-                mdc_filtered_batches = mdc_batches.exclude(course__department=student.department)
-
-            elif student.pathway.name == "Double Major":
-                dsc_1_batches = dsc_batches.filter(course__department=paper_3_department)
-                dsc_2_batches = dsc_batches.filter(course__department=paper_3_department)  # Filter by same department
-                dsc_3_batches = dsc_batches.filter(course__department=paper_1_department)
-                mdc_filtered_batches = mdc_batches.exclude(course__department=student.department)
-
-            else:  # Single Major with Single/Double Minor
-                dsc_1_batches = dsc_batches.filter(course__department=student.department)
-                dsc_2_batches = dsc_batches.exclude(course__department=student.department)
-                dsc_3_batches = dsc_batches.exclude(course__department=student.department)
-                mdc_filtered_batches = mdc_batches.exclude(course__department=student.department)
-
-            # Define field order
-            field_order = []
-
-            # Helper function to customize choice labels
-            def batch_label(batch):
-                return f"{batch.course.department.name} - {batch.course.course_name}"
-
-            # Add form field for DSC 1 (single selection)
-            self.fields['dsc_1'] = forms.ModelChoiceField(
-                queryset=dsc_1_batches,
-                required=True,
-                label='',
-                empty_label="Select an option",
-            )
-            self.fields['dsc_1'].label_from_instance = batch_label
-            field_order.append('dsc_1')
-
-            # Add DSC 2 options (same for all pathways, but dynamic in Double Major)
-            if student.pathway.name == "Double Major":
-                dsc_2_count = dsc_2_batches.count()
-                for i in range(1, dsc_2_count):  # Dynamically set number of DSC 2 fields
-                    field_name = f'dsc_2_option_{i}'
-                    self.fields[field_name] = forms.ModelChoiceField(
-                        queryset=dsc_2_batches,
-                        required=True,
-                        label=f'Option {i}',
-                        empty_label="Select an option",
-                    )
-                    self.fields[field_name].label_from_instance = batch_label
-                    field_order.append(field_name)
-            else:
-                # For other pathways, fixed 3 options for DSC 2
-                for i in range(1, 4):
-                    field_name = f'dsc_2_option_{i}'
-                    self.fields[field_name] = forms.ModelChoiceField(
-                        queryset=dsc_2_batches,
-                        required=True,
-                        label=f'Option {i}',
-                        empty_label="Select an option",
-                    )
-                    self.fields[field_name].label_from_instance = batch_label
-                    field_order.append(field_name)
-
-            # Add DSC 3 options (Dynamic for Double Major)
-            if student.pathway.name == "Double Major":
-                dsc_3_count = dsc_3_batches.count()
-                for i in range(1, dsc_3_count + 1):  # Dynamically set number of DSC 3 fields
-                    field_name = f'dsc_3_option_{i}'
-                    self.fields[field_name] = forms.ModelChoiceField(
-                        queryset=dsc_3_batches,
-                        required=True,
-                        label=f'Option {i}',
-                        empty_label="Select an option",
-                    )
-                    self.fields[field_name].label_from_instance = batch_label
-                    field_order.append(field_name)
-            else:
-                # For other pathways, fixed 3 options for DSC 3
-                for i in range(1, 4):
-                    field_name = f'dsc_3_option_{i}'
-                    self.fields[field_name] = forms.ModelChoiceField(
-                        queryset=dsc_3_batches,
-                        required=True,
-                        label=f'Option {i}',
-                        empty_label="Select an option",
-                    )
-                    self.fields[field_name].label_from_instance = batch_label
-                    field_order.append(field_name)
-
-            # Dynamically generate MDC options based on available courses
-            mdc_count = mdc_filtered_batches.count()
-            for i in range(1, mdc_count + 1):
-                field_name = f'mdc_option_{i}'
-                self.fields[field_name] = forms.ModelChoiceField(
-                    queryset=mdc_filtered_batches,
-                    required=True,
-                    label=f'Option {i}',
-                    empty_label="Select an option",
-                )
-                self.fields[field_name].label_from_instance = batch_label
-                field_order.append(field_name)
-
-            # Ensure the form fields appear in the specified order
-            self.order_fields(field_order)
-
-        # Debug: Print final field order
-        print("Final Field Order:", list(self.fields.keys()))
-
-
-
-from django import forms
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
         fields = ['course_code', 'course_name', 'course_type', 'department', 'semester', 'seat_limit']
-
+        widgets = {
+            'course_code': forms.TextInput(attrs={
+                'pattern': '[A-Za-z0-9]+',
+                'title': 'Only alphanumeric characters allowed'
+            }),
+            'semester': forms.NumberInput(attrs={
+                'min': 1,
+                'max': 8
+            }),
+            'seat_limit': forms.NumberInput(attrs={
+                'min': 1
+            })
+        }
 
 class BatchForm(forms.ModelForm):
-    # Generate year choices dynamically (from current year onwards)
-    def get_year_choices():
-        current_year = datetime.now().year
-        return [(f"{year}-{year+1}", f"{year}-{year+1}") for year in range(current_year, current_year + 10)]
-
     year = forms.ChoiceField(
-        choices=[('', 'Select Year')] + get_year_choices(),
-        label="Academic Year",
+        choices=lambda: [('', 'Select Year')] + [
+            (f"{year}-{year+1}", f"{year}-{year+1}") 
+            for year in range(datetime.now().year, datetime.now().year + 10)
+        ],
         widget=forms.Select(attrs={'class': 'form-control'})
     )
-
+    
     part = forms.ChoiceField(
         choices=[('', 'Select Part'), ('1', 'Part 1'), ('2', 'Part 2')],
-        label="Batch Part",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
 
@@ -323,205 +250,184 @@ class BatchForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        year = cleaned_data.get('year')
-        part = cleaned_data.get('part')
-
-        if not year or not part:
-            raise forms.ValidationError("Year and Part are required!")
-
+        if not cleaned_data.get('year') or not cleaned_data.get('part'):
+            raise ValidationError("Both year and part are required")
         return cleaned_data
-
-
-   
 
 class BatchFilterForm(forms.Form):
     year = forms.ChoiceField(
+        choices=lambda: [('', 'Select Year')] + [
+            (year, year) for year in 
+            Batch.objects.values_list('year', flat=True).distinct()
+        ],
         required=False,
-        label="Academic Year",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
     part = forms.ChoiceField(
         choices=[('', 'Select Part'), ('1', 'Part 1'), ('2', 'Part 2')],
         required=False,
-        label="Batch Part",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
-
-    def __init__(self, *args, **kwargs):
-        super(BatchFilterForm, self).__init__(*args, **kwargs)
-        # Dynamically populate year choices from the database
-        years = Batch.objects.values_list('year', flat=True).distinct()
-        self.fields['year'].choices = [('', 'Select Year')] + [(year, year) for year in years]
-
-from django import forms
-from .models import Student
 
 class StudentRegistrationForm(forms.ModelForm):
     dob = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-        label="Date of Birth"
+        validators=[lambda value: ValidationError("Date cannot be in future") 
+                    if value > date.today() else None]
     )
+    
     password = forms.CharField(
         widget=forms.TextInput(attrs={'readonly': 'readonly', 'class': 'form-control'}),
-        label="Password (Auto-filled from DOB)",
         required=False
     )
 
     class Meta:
         model = Student
-        fields = ['admission_number', 'name', 'dob', 'email', 'phone_number', 'department', 
-                  'admission_category', 'admission_year', 'pathway',
-                  'normalized_marks', 'password']
-        
+        fields = [
+            'admission_number', 'name', 'dob', 'email', 'phone_number', 'department',
+            'admission_category', 'admission_year', 'pathway', 'normalized_marks', 'password'
+        ]
         widgets = {
-            'admission_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Admission Number'}),
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Full Name'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email'}),
-            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number'}),
-            'department': forms.Select(attrs={'class': 'form-select'}),
-            'admission_category': forms.Select(attrs={'class': 'form-select'}),
-            'admission_year': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Admission Year'}),
-            'pathway': forms.Select(attrs={'class': 'form-select'}),
-            
+            'phone_number': forms.TextInput(attrs={
+                'pattern': '[0-9]+',
+                'minlength': '10',
+                'maxlength': '15'
+            }),
+            'normalized_marks': forms.NumberInput(attrs={
+                'min': 0,
+                'max': 100
+            }),
+            'admission_year': forms.NumberInput(attrs={
+                'min': 2000,
+                'max': date.today().year
+            })
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        dob = cleaned_data.get('dob')
-
-        if dob:
-            # Auto-fill password field in the form (does not store in DB)
-            formatted_password = dob.strftime('%d/%m/%y')  # DD/MM/YY format
-            self.initial['password'] = formatted_password  # Set initial value
-        
+        if 'dob' in cleaned_data:
+            cleaned_data['password'] = cleaned_data['dob'].strftime('%d/%m/%y')
         return cleaned_data
 
-    def save(self, commit=True):
-        """Ensure password is stored in the User model if needed."""
-        instance = super().save(commit=False)
-        
-        # If instance has a related user, set password
-        if instance.user:
-            instance.user.set_password(instance.dob.strftime('%d/%m/%y'))
-            instance.user.save()
-
-        if commit:
-            instance.save()
-        return instance
-
-
 class BulkStudentUploadForm(forms.Form):
-    csv_file = forms.FileField(label="Upload CSV File", help_text="Only .csv files are allowed")
-
+    csv_file = forms.FileField(
+        label="CSV File",
+        widget=forms.FileInput(attrs={'accept': '.csv'}),
+        validators=[FileExtensionValidator(allowed_extensions=['csv'])]
+    )
 
 class StudentEditForm(forms.ModelForm):
     class Meta:
         model = Student
-        fields = ['admission_number','name', 'dob', 'email', 'phone_number', 'department', 'admission_category', 
-                  'pathway', 'current_sem', 'first_sem_marks', 'normalized_marks', 'status']
+        fields = [
+            'admission_number', 'name', 'dob', 'email', 'phone_number', 'department',
+            'admission_category', 'pathway', 'current_sem', 'first_sem_marks', 
+            'normalized_marks', 'status'
+        ]
         widgets = {
-            'dob': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter phone number'}),
-            'normalized_marks': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Enter Plus Two Marks'}),
-            'first_sem_marks': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'status': forms.Select(attrs={'class': 'form-control'}, choices=[(0, 'Inactive'), (1, 'Active')]),
+            'dob': forms.DateInput(attrs={'type': 'date'}),
+            'phone_number': forms.TextInput(attrs={
+                'pattern': '[0-9]+',
+                'minlength': '10',
+                'maxlength': '15'
+            }),
+            'current_sem': forms.NumberInput(attrs={
+                'min': 1,
+                'max': 8
+            }),
+            'first_sem_marks': forms.NumberInput(attrs={
+                'min': 0,
+                'max': 100,
+                'step': '0.01'
+            }),
+            'normalized_marks': forms.NumberInput(attrs={
+                'min': 0,
+                'max': 100
+            })
         }
-        labels = {
-            'normalized_marks': 'Plus Two Marks (Normalized)',
-            'first_sem_marks':'First Semester Marks (SGP)'
-        }
-
-
-from django import forms
-from .models import HOD
-
-class HODEditForm(forms.ModelForm):
-    class Meta:
-        model = HOD
-        fields = ['full_name', 'email', 'department']
-
 
 class HODForm(forms.ModelForm):
     class Meta:
         model = HOD
-        fields = ['full_name', 'email', 'phone_number', 'department']  # No need for password field
-        
-        
+        fields = ['full_name', 'email', 'phone_number', 'department']
+        widgets = {
+            'email': forms.EmailInput(attrs={'required': True}),
+            'phone_number': forms.TextInput(attrs={
+                'pattern': '[0-9]+',
+                'minlength': '10',
+                'maxlength': '15'
+            })
+        }
 
-from datetime import datetime
+class HODEditForm(HODForm):
+    class Meta(HODForm.Meta):
+        pass  # Inherits all from HODForm but can be customized if needed
 
 class StudentAllotmentFilterForm(forms.Form):
     department = forms.ModelChoiceField(
-        queryset=Department.objects.all(), required=False, label="Department"
+        queryset=Department.objects.all(), 
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
 
     semester = forms.ChoiceField(
-        choices=[("", "Select Semester")] + [(str(i), f"Semester {i}") for i in range(1, 9)], 
-        required=False, label="Semester"
+        choices=[("", "Select Semester")] + [(i, f"Semester {i}") for i in range(1, 9)],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
 
     admission_year = forms.ChoiceField(
-        choices=[], required=False, label="Admission Year"
+        choices=lambda: [("", "Select Year")] + [
+            (str(year), str(year)) for year in 
+            Student.objects.order_by('admission_year')
+                          .values_list('admission_year', flat=True)
+                          .distinct()
+        ],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
-
-    def __init__(self, *args, **kwargs):
-            super(StudentAllotmentFilterForm, self).__init__(*args, **kwargs)
-
-    # Fetch distinct admission years from Student model
-            years = (
-            Student.objects.order_by("admission_year")
-            .values_list("admission_year", flat=True)
-            .distinct()
-            )
-
-            year_choices = [("", "Select Year")] + [(str(y), str(y)) for y in years]
-            self.fields["admission_year"].choices = year_choices
-
-
-
 
 class AllocationSettingsForm(forms.ModelForm):
     class Meta:
         model = AllocationSettings
         fields = '__all__'
         widgets = {
-            'department': forms.Select(attrs={
-                'class': 'form-control select2',
-                'style': 'width: 100%'
-            }),
-            'strength': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1'
-            }),
+            'strength': forms.NumberInput(attrs={'min': 1}),
             'department_quota_percentage': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'max': '100'
+                'min': 1,
+                'max': 100
             }),
             'general_quota_percentage': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'max': '100'
+                'min': 1,
+                'max': 100
             }),
             'sc_st_quota_percentage': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'max': '100'
+                'min': 1,
+                'max': 100
             }),
             'other_quota_percentage': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'min': '1',
-                'max': '100'
+                'min': 1,
+                'max': 100
             }),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Only show departments that don't already have settings
         if self.instance.pk:
             self.fields['department'].disabled = True
         else:
-            self.fields['department'].queryset = self.fields['department'].queryset.exclude(
+            self.fields['department'].queryset = Department.objects.exclude(
                 allocationsettings__isnull=False
             )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        quotas = [
+            cleaned_data.get('general_quota_percentage', 0),
+            cleaned_data.get('sc_st_quota_percentage', 0),
+            cleaned_data.get('other_quota_percentage', 0)
+        ]
+        if sum(quotas) != 100:
+            raise ValidationError("Quota percentages must sum to 100%")
+        return cleaned_data
