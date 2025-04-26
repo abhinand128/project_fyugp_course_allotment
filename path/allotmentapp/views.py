@@ -16,12 +16,12 @@ import csv
 from datetime import datetime
 from .models import (
     Student, Course, CoursePreference, Batch, CourseAllotment, 
-    Department, Pathway, HOD
+    Department, Pathway, HOD,AllocationSettings
 )
 from .forms import (
     StudentForm, CourseFilterForm, CourseSelectionFormSem1, CourseSelectionFormSem2, 
     CourseForm, BatchForm, BatchFilterForm, BulkStudentUploadForm, 
-    StudentRegistrationForm, StudentEditForm, HODEditForm, HODForm,StudentAllotmentFilterForm
+    StudentRegistrationForm, StudentEditForm, HODEditForm, HODForm,StudentAllotmentFilterForm,AllocationSettingsForm
 )
 
 def Admin_group_required(user):
@@ -36,95 +36,123 @@ def hod_group_required(user):
     """Check if the user belongs to the 'Admin' group."""
     return user.groups.filter(name='hod').exists()
 
+@transaction.atomic
 def allocate_courses(semester):
-    with transaction.atomic():
-        # 1. Allocate Paper 1 (DSC 1) - Ensuring at least one core course is assigned
-        for student in Student.objects.filter(current_sem=semester):
+    # 1. Allocate Paper 1 (DSC 1) - Ensuring at least one core course is assigned
+    for student in Student.objects.filter(current_sem=semester):
+        allocated = False
+        preferences = CoursePreference.objects.filter(
+            student=student, 
+            paper_no=1
+        ).order_by('preference_number')
+
+        for preference in preferences:
+            batch = preference.batch
+            if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
+                CourseAllotment.objects.create(
+                    student=student, 
+                    batch=batch, 
+                    paper_no=1
+                )
+                allocated = True
+                break
+
+        if not allocated:
+            print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper 1. All preferences full.")
+
+    # 2. Allocate Papers 2 & 3 based on marks
+    if semester == 2:
+        students = Student.objects.filter(current_sem=semester).order_by(
+            F('first_sem_marks').desc(nulls_last=True)
+        )
+    else:
+        students = Student.objects.filter(current_sem=semester).order_by('-normalized_marks')
+
+    for paper_no in range(2, 4):
+        for student in students:
             allocated = False
-            preferences = CoursePreference.objects.filter(student=student, paper_no=1).order_by('preference_number')
+            allotted_batches = CourseAllotment.objects.filter(
+                student=student
+            ).values_list('batch', flat=True)
+            
+            preferences = CoursePreference.objects.filter(
+                student=student, 
+                paper_no=paper_no
+            ).exclude(batch__in=allotted_batches).order_by('preference_number')
 
             for preference in preferences:
                 batch = preference.batch
                 if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-                    CourseAllotment.objects.create(student=student, batch=batch, paper_no=1)
+                    CourseAllotment.objects.create(
+                        student=student, 
+                        batch=batch, 
+                        paper_no=paper_no
+                    )
                     allocated = True
                     break
 
             if not allocated:
-                print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper 1. All preferences full.")
+                print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper {paper_no}. All preferences full.")
 
-        # 2. Allocate Papers 2 & 3 based on marks
-        if semester == 2:
-            students = Student.objects.filter(current_sem=semester).order_by(F('first_sem_marks').desc(nulls_last=True))
-        else:
-            students = Student.objects.filter(current_sem=semester).order_by('-normalized_marks')
+    # 3. Allocate Paper 4 (MDC) with Department & Category Quota
+    for setting in AllocationSettings.objects.all():
+        department = setting.department
+        total_dept_quota = setting.calculate_total_quota()
+        general_quota = setting.calculate_general_quota()
+        sc_st_quota = setting.calculate_sc_st_quota()
+        other_quota = setting.calculate_other_quota()
 
-        for paper_no in range(2, 4):
-            for student in students:
-                allocated = False
-                allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
-                preferences = CoursePreference.objects.filter(student=student, paper_no=paper_no).exclude(batch__in=allotted_batches).order_by('preference_number')
-
-                for preference in preferences:
-                    batch = preference.batch
-                    if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-                        CourseAllotment.objects.create(student=student, batch=batch, paper_no=paper_no)
-                        allocated = True
-                        break
-
-                if not allocated:
-                    print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper {paper_no}. All preferences full.")
-
-        # 3. Allocate Paper 4 (MDC) with Department & Category Quota
-        department_strengths = {
-            "Economics": 48, "History": 48, "Malayalam": 36, "Commerce": 55, "Physics": 43,
-            "Chemistry": 29, "Zoology": 29, "Botany": 29, "Statistics": 29
-        }
-        department_quota = {dept: max(1, round(strength * 0.2)) for dept, strength in department_strengths.items()}
-
-        all_general_students = list(Student.objects.filter(current_sem=semester, admission_category="General").order_by(
+        # Get students for each category
+        general_students = list(Student.objects.filter(
+            current_sem=semester,
+            department__name=department,
+            admission_category="General"
+        ).order_by(
             F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
-        ))
+        )[:general_quota])
 
-        for department, total_dept_quota in department_quota.items():
-            general_quota = max(1, round(total_dept_quota * 0.6))
-            sc_st_quota = max(1, round(total_dept_quota * 0.2))
-            other_quota = max(1, round(total_dept_quota * 0.2))
+        sc_st_students = list(Student.objects.filter(
+            current_sem=semester,
+            department__name=department,
+            admission_category__in=["SC", "ST"]
+        ).order_by(
+            F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
+        )[:sc_st_quota])
 
-            general_students = list(Student.objects.filter(
-                current_sem=semester, department__name=department, admission_category="General"
-            ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks')[:general_quota])
+        other_students = list(Student.objects.filter(
+            current_sem=semester,
+            department__name=department,
+            admission_category__in=["EWS", "Sports", "Management"]
+        ).order_by(
+            F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
+        )[:other_quota])
 
-            sc_st_students = list(Student.objects.filter(
-                current_sem=semester, department__name=department, admission_category__in=["SC", "ST"]
-            ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks')[:sc_st_quota])
+        selected_students = general_students + sc_st_students + other_students
 
-            other_students = list(Student.objects.filter(
-                current_sem=semester, department__name=department, admission_category__in=["EWS", "Sports", "Management"]
-            ).order_by(F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks')[:other_quota])
+        for student in selected_students:
+            allotted_batches = CourseAllotment.objects.filter(
+                student=student
+            ).values_list('batch', flat=True)
+            
+            preferences = CoursePreference.objects.filter(
+                student=student, 
+                paper_no=4
+            ).exclude(batch__in=allotted_batches).order_by('preference_number')
 
-            selected_students = general_students + sc_st_students + other_students
+            allocated = False
+            for preference in preferences:
+                batch = preference.batch
+                if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
+                    CourseAllotment.objects.create(
+                        student=student, 
+                        batch=batch, 
+                        paper_no=4
+                    )
+                    allocated = True
+                    break
 
-            # ✅ Ensure one MDC course per student based on highest preference
-            for student in selected_students:
-                allotted_batches = CourseAllotment.objects.filter(student=student).values_list('batch', flat=True)
-                
-                # Get all MDC preferences sorted by priority
-                preferences = CoursePreference.objects.filter(student=student, paper_no=4).exclude(batch__in=allotted_batches).order_by('preference_number')
-
-                allocated = False
-                for preference in preferences:
-                    batch = preference.batch
-                    seat_count = CourseAllotment.objects.filter(batch=batch).count()  # Optimized
-
-                    if batch.status and batch.course.seat_limit > seat_count:
-                        CourseAllotment.objects.create(student=student, batch=batch, paper_no=4)
-                        allocated = True
-                        break  # ✅ Ensures exactly one MDC course per student
-
-                if not allocated:
-                    print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper 4 (MDC). All preferences full.")
-           
+            if not allocated:
+                print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper 4 (MDC). All preferences full.")
     
 def index(request):
     return render(request, 'registration/login.html')
@@ -1509,3 +1537,55 @@ def hod_reset_password(request):
         form = PasswordChangeForm(user=request.user)
 
     return render(request, 'hod/hod_reset_password.html', {'form': form})
+
+
+@group_required('Admin')
+def allocation_settings_view(request):
+    if request.method == 'POST':
+        form = AllocationSettingsForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Settings saved successfully!')
+            return redirect('allocation_settings')
+    else:
+        departments_with_settings = Department.objects.filter(
+            allocationsettings__isnull=False
+        ).values_list('id', flat=True)
+
+        available_departments = Department.objects.filter(
+            isMajor=True
+        ).exclude(id__in=departments_with_settings)
+
+        form = AllocationSettingsForm()
+        form.fields['department'].queryset = available_departments  
+
+    settings = AllocationSettings.objects.select_related('department').all()
+
+    context = {
+        'form': form,
+        'settings': settings,
+    }
+    return render(request, 'admin/allocation_settings.html', context)
+
+@group_required('Admin')
+def edit_allocation_setting(request, pk):
+    setting = AllocationSettings.objects.get(pk=pk)
+    if request.method == 'POST':
+        form = AllocationSettingsForm(request.POST, instance=setting)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'{setting.department} settings updated successfully!')
+            return redirect('allocation_settings')
+    else:
+        form = AllocationSettingsForm(instance=setting)
+    
+    return render(request, 'admin/edit_setting.html', {'form': form, 'setting': setting})
+
+@group_required('Admin')
+def delete_allocation_setting(request, pk):
+    setting = AllocationSettings.objects.get(pk=pk)
+    if request.method == 'POST':
+        setting.delete()
+        messages.success(request, f'{setting.department} settings deleted successfully!')
+        return redirect('allocation_settings')
+    return render(request, 'admin/delete_setting.html', {'setting': setting})

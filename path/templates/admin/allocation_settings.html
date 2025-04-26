@@ -1,0 +1,332 @@
+{% extends 'admin_base.html' %}
+{% load custom_filters %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"></h1>
+
+    <!-- Current Page & Home Link -->
+    <div>
+        <span class="me-3 text-muted">Allotment settings | </span>
+        <a href="{% url 'admin_dashboard' %}">
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h1 class="fw-bold">Current allocation Settings</h1> <!-- Removed bottom margin for better alignment -->
+    <div>
+       <!-- Add New Setting Button -->
+    <div class="mb-3">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSettingModal">
+            <i class="fas fa-plus me-2"></i>Add New Department Settings
+        </button>
+    </div> 
+        
+    </div>
+</div>
+    
+    
+
+    <!-- Existing Settings Table -->
+    <div class="card shadow mb-4">
+        
+        
+                
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mt-2" id="allocationSettingsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Department</th>
+                            <th>Strength</th>
+                            <th>Dept %</th>
+                            <th>Total Quota</th>
+                            <th>General %</th>
+                            <th>Gen Quota</th>
+                            <th>SC/ST %</th>
+                            <th>SC/ST Quota</th>
+                            <th>Other %</th>
+                            <th>Other Quota</th>
+                            <th>Sum 100%</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for setting in settings %}
+                        <tr>
+                            <td>{{ setting.department }}</td>
+                            <td>{{ setting.strength }}</td>
+                            <td>{{ setting.department_quota_percentage }}</td>
+                            <td>{{ setting|calculate_total_quota }}</td>
+                            <td>{{ setting.general_quota_percentage }}</td>
+                            <td>{{ setting|calculate_general_quota }}</td>
+                            <td>{{ setting.sc_st_quota_percentage }}</td>
+                            <td>{{ setting|calculate_sc_st_quota }}</td>
+                            <td>{{ setting.other_quota_percentage }}</td>
+                            <td>{{ setting|calculate_other_quota }}</td>
+                            <td class="text-center">
+                                {% if setting.general_quota_percentage|add:setting.sc_st_quota_percentage|add:setting.other_quota_percentage == 100 %}
+                                    <i class="fas fa-check-circle text-success"></i>
+                                {% else %}
+                                    <i class="fas fa-times-circle text-danger"></i>
+                                {% endif %}
+                            </td>
+                            <td class="text-center action-buttons">
+                                <a href="{% url 'edit_allocation_setting' setting.id %}" 
+                                   class="btn btn-sm btn-primary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'delete_allocation_setting' setting.id %}" 
+                                   class="btn btn-sm btn-danger" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="12" class="text-center">No allocation settings found. Please add some.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Setting Modal -->
+    <div class="modal fade" id="addSettingModal" tabindex="-1" aria-labelledby="addSettingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: #4e73df; color: white;">
+                    <h5 class="modal-title" id="addSettingModalLabel">Add New Department Settings</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="post" class="allocation-form">
+                    <div class="modal-body">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">{{ form.department.label }}</label>
+                                    {{ form.department }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">{{ form.strength.label }}</label>
+                                    {{ form.strength }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">{{ form.department_quota_percentage.label }}</label>
+                                    {{ form.department_quota_percentage }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">{{ form.general_quota_percentage.label }}</label>
+                                    {{ form.general_quota_percentage }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">{{ form.sc_st_quota_percentage.label }}</label>
+                                    {{ form.sc_st_quota_percentage }}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">{{ form.other_quota_percentage.label }}</label>
+                                    {{ form.other_quota_percentage }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Information Cards -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card shadow mb-4 info-card">
+                <div class="card-header py-3" style="background-color: #4e73df; color: white;">
+                    <h6 class="m-0 font-weight-bold">Calculation Formula</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="formula-list">
+                        <li><strong>Total Quota:</strong> Department Strength × Department Quota %</li>
+                        <li><strong>General Quota:</strong> Total Quota × General %</li>
+                        <li><strong>SC/ST Quota:</strong> Total Quota × SC/ST %</li>
+                        <li><strong>Other Quota:</strong> Total Quota × Other %</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow mb-4 info-card">
+                <div class="card-header py-3" style="background-color: #4e73df; color: white;">
+                    <h6 class="m-0 font-weight-bold">Important Notes</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="notes-list">
+                        <li>Department Quota % determines what percentage of department strength gets MDC seats</li>
+                        <li>General + SC/ST + Other percentages must equal exactly 100%</li>
+                        <li>Changes take effect in the next allocation run</li>
+                        <li>All quotas are rounded up to ensure at least 1 seat per category</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Main Container */
+.allocation-container {
+    padding: 20px;
+    background-color: #f8f9fc;
+}
+
+/* Table Styling */
+#allocationSettingsTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#allocationSettingsTable th {
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.9rem;
+    padding: 12px 8px;
+}
+
+#allocationSettingsTable td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+    padding: 10px 8px;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(78, 115, 223, 0.05);
+}
+
+.text-success {
+    color: #1cc88a !important;
+}
+
+.text-danger {
+    color: #e74a3b !important;
+}
+
+.action-buttons .btn {
+    margin: 0 3px;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Form Styling */
+.allocation-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.allocation-form label {
+    font-weight: 600;
+    color: #4e73df;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.allocation-form .form-control {
+    border-radius: 5px;
+    border: 1px solid #d1d3e2;
+    padding: 0.375rem 0.75rem;
+    height: calc(1.5em + 0.75rem + 2px);
+}
+
+.btn-primary {
+    background-color: #4e73df;
+    border-color: #4e73df;
+}
+
+.btn-primary:hover {
+    background-color: #3a5bbf;
+    border-color: #3a5bbf;
+}
+
+/* Modal Styling */
+.modal-header {
+    border-bottom: 1px solid #e3e6f0;
+}
+
+/* Info Cards */
+.info-card {
+    border-radius: 5px;
+    border: 1px solid #e3e6f0;
+}
+
+.info-card .card-body {
+    padding: 1.25rem;
+}
+
+.formula-list, .notes-list {
+    padding-left: 20px;
+    margin-bottom: 0;
+}
+
+.formula-list li, .notes-list li {
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    #allocationSettingsTable td, 
+    #allocationSettingsTable th {
+        padding: 8px 5px;
+        font-size: 0.8rem;
+    }
+    
+    .action-buttons .btn {
+        margin: 2px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#allocationSettingsTable').DataTable({
+        "pageLength": 25,
+        "ordering": true,
+        "responsive": true,
+        "columnDefs": [
+            { "orderable": false, "targets": [11] },
+            { "className": "text-center", "targets": [3,5,7,9,10] }
+        ],
+        "dom": '<"top"lf>rt<"bottom"ip>',
+        "language": {
+            "search": "_INPUT_",
+            "searchPlaceholder": "Search departments...",
+        }
+    });
+
+    // Confirm before delete
+    $('.btn-danger').click(function() {
+        return confirm('Are you sure you want to delete these settings?');
+    });
+});
+</script>
+{% endblock %}

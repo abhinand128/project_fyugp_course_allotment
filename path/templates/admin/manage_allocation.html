@@ -9,7 +9,7 @@
     <!-- Current Page & Home Link -->
     <div>
         <span class="me-3 text-muted">Manage Allotments | </span>
-        <a href="{% url 'admin_dashboard' %}" >
+        <a href="{% url 'admin_dashboard' %}">
             <i class="fas fa-home"></i> Home
         </a>
     </div>
@@ -35,6 +35,13 @@
         <h3>View Allotment Records</h3>
         <p>Retrieve allotment details for all students based on admission year and semester and department</p>
     </div>
+
+    <!-- New Allotment Settings Card -->
+    <div class="card" onclick="window.location.href='{% url 'allocation_settings' %}'">
+        <div class="icon-box"><i class="fas fa-cog"></i></div>
+        <h3>Allotment Settings</h3>
+        <p>Configure department strengths and quota percentages for course allocation</p>
+    </div>
 </div>
 
 <style>
@@ -50,18 +57,18 @@
     .card {
         background: #ffffff;
         border-radius: 15px;
-        padding: 30px;  /* Increased padding */
-        width: 280px;   /* Slightly wider for better spacing */
+        padding: 30px;
+        width: 260px;
         text-align: center;
         cursor: pointer;
-        border: 3px solid #e0e0e0; /* Thicker border */
+        border: 3px solid #e0e0e0;
         box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease-in-out;
     }
 
     .card:hover {
         transform: translateY(-5px);
-        border-color: #333; /* Darker border on hover */
+        border-color: #333;
         box-shadow: 5px 10px 25px rgba(0, 0, 0, 0.2);
     }
 
@@ -75,7 +82,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 2px solid #ddd; /* Added a border around the icon */
+        border: 2px solid #ddd;
     }
 
     .icon-box i {
@@ -86,7 +93,7 @@
     /* Typography */
     .card h3 {
         font-size: 18px;
-        font-weight: 700;  /* Made text bolder */
+        font-weight: 700;
         margin-bottom: 10px;
         color: #333;
     }
@@ -94,6 +101,20 @@
     .card p {
         font-size: 14px;
         color: #666;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .cards-container {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .card {
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 20px;
+        }
     }
 </style>
 

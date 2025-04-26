@@ -1,5 +1,5 @@
 from django import forms
-from .models import Student,Course,Course_type,Department,Batch,CourseAllotment
+from .models import Student,Course,Course_type,Department,Batch,CourseAllotment,AllocationSettings
 from django.core.exceptions import ValidationError
 from datetime import datetime
 
@@ -478,9 +478,50 @@ class StudentAllotmentFilterForm(forms.Form):
             year_choices = [("", "Select Year")] + [(str(y), str(y)) for y in years]
             self.fields["admission_year"].choices = year_choices
 
-          
 
 
 
-
-
+class AllocationSettingsForm(forms.ModelForm):
+    class Meta:
+        model = AllocationSettings
+        fields = '__all__'
+        widgets = {
+            'department': forms.Select(attrs={
+                'class': 'form-control select2',
+                'style': 'width: 100%'
+            }),
+            'strength': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1'
+            }),
+            'department_quota_percentage': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '100'
+            }),
+            'general_quota_percentage': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '100'
+            }),
+            'sc_st_quota_percentage': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '100'
+            }),
+            'other_quota_percentage': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '1',
+                'max': '100'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show departments that don't already have settings
+        if self.instance.pk:
+            self.fields['department'].disabled = True
+        else:
+            self.fields['department'].queryset = self.fields['department'].queryset.exclude(
+                allocationsettings__isnull=False
+            )

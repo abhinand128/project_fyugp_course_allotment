@@ -36,3 +36,25 @@ def multiply(value, arg):
         return int(value) * int(arg)
     except (ValueError, TypeError):
         return ''
+
+
+@register.filter(name='calculate_total_quota')
+def calculate_total_quota(setting):
+    return max(1, round(setting.strength * setting.department_quota_percentage / 100))
+
+@register.filter(name='calculate_general_quota')
+def calculate_general_quota(setting):
+    total = calculate_total_quota(setting)
+    return max(1, round(total * setting.general_quota_percentage / 100))
+
+@register.filter(name='calculate_sc_st_quota')
+def calculate_sc_st_quota(setting):
+    total = calculate_total_quota(setting)
+    return max(1, round(total * setting.sc_st_quota_percentage / 100))
+
+@register.filter(name='calculate_other_quota')
+def calculate_other_quota(setting):
+    total = calculate_total_quota(setting)
+    return max(1, round(total * setting.other_quota_percentage / 100))
+
+

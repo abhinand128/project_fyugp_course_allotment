@@ -1,8 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.exceptions import ValidationError
 
 class Department(models.Model):
     name = models.CharField(max_length=100)
+    isMajor= models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -140,3 +143,60 @@ class HOD(models.Model):
 
     def __str__(self):
         return self.full_name 
+    
+    
+
+
+class AllocationSettings(models.Model):
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    strength = models.PositiveIntegerField(
+        default=0,
+        validators=[MinValueValidator(1)]
+    )
+    department_quota_percentage = models.PositiveIntegerField(
+        default=20,
+        help_text="Percentage of department strength to allocate as MDC quota",
+        validators=[MinValueValidator(1), MaxValueValidator(100)]
+    )
+    general_quota_percentage = models.PositiveIntegerField(
+        default=60,
+        help_text="Percentage for General category",
+        validators=[MinValueValidator(1), MaxValueValidator(100)]
+    )
+    sc_st_quota_percentage = models.PositiveIntegerField(
+        default=20,
+        help_text="Percentage for SC/ST category",
+        validators=[MinValueValidator(1), MaxValueValidator(100)]
+    )
+    other_quota_percentage = models.PositiveIntegerField(
+        default=20,
+        help_text="Percentage for EWS/Sports/Management category",
+        validators=[MinValueValidator(1), MaxValueValidator(100)]
+    )
+    
+    def clean(self):
+        if (self.general_quota_percentage + 
+            self.sc_st_quota_percentage + 
+            self.other_quota_percentage) != 100:
+            raise ValidationError(
+                "The sum of General, SC/ST, and Other quotas must equal 100%"
+            )
+    
+    def calculate_total_quota(self):
+        return max(1, round(self.strength * self.department_quota_percentage / 100))
+    
+    def calculate_general_quota(self):
+        return max(1, round(self.calculate_total_quota() * self.general_quota_percentage / 100))
+    
+    def calculate_sc_st_quota(self):
+        return max(1, round(self.calculate_total_quota() * self.sc_st_quota_percentage / 100))
+    
+    def calculate_other_quota(self):
+        return max(1, round(self.calculate_total_quota() * self.other_quota_percentage / 100))
+    
+    def __str__(self):
+        return f"{self.department} Settings"
+
+    class Meta:
+        verbose_name = "Allocation Setting"
+        verbose_name_plural = "Allocation Settings"
