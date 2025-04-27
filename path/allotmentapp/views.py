@@ -13,7 +13,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.db.models import F, Max, Count
 from .decorators import group_required
 import csv
-from datetime import datetime
+from datetime import date, datetime
 from .models import (
     Student, Course, CoursePreference, Batch, CourseAllotment, 
     Department, Pathway, HOD,AllocationSettings
@@ -38,29 +38,17 @@ def hod_group_required(user):
 
 @transaction.atomic
 def allocate_courses(semester):
-    # 1. Allocate Paper 1 (DSC 1) - Ensuring at least one core course is assigned
+    """Allocate courses for all students in the given semester"""
+    # Clear existing allocations for this semester
+    CourseAllotment.objects.filter(
+        student__current_sem=semester
+    ).delete()
+
+    # 1. Allocate Paper 1 (DSC 1) - Core course from student's department
     for student in Student.objects.filter(current_sem=semester):
-        allocated = False
-        preferences = CoursePreference.objects.filter(
-            student=student, 
-            paper_no=1
-        ).order_by('preference_number')
+        allocate_paper(student, paper_no=1)
 
-        for preference in preferences:
-            batch = preference.batch
-            if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-                CourseAllotment.objects.create(
-                    student=student, 
-                    batch=batch, 
-                    paper_no=1
-                )
-                allocated = True
-                break
-
-        if not allocated:
-            print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper 1. All preferences full.")
-
-    # 2. Allocate Papers 2 & 3 based on marks
+    # 2. Allocate Papers 2 & 3 based on academic performance
     if semester == 2:
         students = Student.objects.filter(current_sem=semester).order_by(
             F('first_sem_marks').desc(nulls_last=True)
@@ -68,91 +56,111 @@ def allocate_courses(semester):
     else:
         students = Student.objects.filter(current_sem=semester).order_by('-normalized_marks')
 
-    for paper_no in range(2, 4):
+    for paper_no in [2, 3]:  # DSC 2 and DSC 3
         for student in students:
-            allocated = False
-            allotted_batches = CourseAllotment.objects.filter(
-                student=student
-            ).values_list('batch', flat=True)
-            
-            preferences = CoursePreference.objects.filter(
-                student=student, 
-                paper_no=paper_no
-            ).exclude(batch__in=allotted_batches).order_by('preference_number')
+            allocate_paper(student, paper_no=paper_no)
 
-            for preference in preferences:
-                batch = preference.batch
-                if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-                    CourseAllotment.objects.create(
-                        student=student, 
-                        batch=batch, 
-                        paper_no=paper_no
-                    )
-                    allocated = True
-                    break
-
-            if not allocated:
-                print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper {paper_no}. All preferences full.")
-
-    # 3. Allocate Paper 4 (MDC) with Department & Category Quota
+    # 3. Allocate Paper 4 (MDC) with improved quota handling
+    # First pass: Try to allocate within department quotas
     for setting in AllocationSettings.objects.all():
         department = setting.department
-        total_dept_quota = setting.calculate_total_quota()
-        general_quota = setting.calculate_general_quota()
-        sc_st_quota = setting.calculate_sc_st_quota()
-        other_quota = setting.calculate_other_quota()
-
-        # Get students for each category
-        general_students = list(Student.objects.filter(
+        
+        # Get all department students ordered by performance
+        dept_students = Student.objects.filter(
             current_sem=semester,
-            department__name=department,
-            admission_category="General"
+            department=department
         ).order_by(
             F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
-        )[:general_quota])
+        )
+        
+        # Allocate to quota students first
+        quota_categories = [
+            ("General", setting.calculate_general_quota()),
+            (["SC", "ST"], setting.calculate_sc_st_quota()),
+            (["EWS", "Sports", "Management"], setting.calculate_other_quota())
+        ]
+        
+        for categories, quota in quota_categories:
+            if quota > 0:
+                quota_students = dept_students.filter(
+                    admission_category__in=categories if isinstance(categories, list) else categories
+                )[:quota]
+                
+                for student in quota_students:
+                    if not CourseAllotment.objects.filter(student=student, paper_no=4).exists():
+                        allocate_paper(student, paper_no=4)
 
-        sc_st_students = list(Student.objects.filter(
-            current_sem=semester,
-            department__name=department,
-            admission_category__in=["SC", "ST"]
-        ).order_by(
-            F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
-        )[:sc_st_quota])
+    # Second pass: Allocate remaining students who didn't get MDC yet
+    remaining_students = Student.objects.filter(
+        current_sem=semester
+    ).exclude(
+        id__in=CourseAllotment.objects.filter(paper_no=4).values('student')
+    ).order_by(
+        F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
+    )
+    
+    for student in remaining_students:
+        allocate_paper(student, paper_no=4, allow_any_mdc=True)
 
-        other_students = list(Student.objects.filter(
-            current_sem=semester,
-            department__name=department,
-            admission_category__in=["EWS", "Sports", "Management"]
-        ).order_by(
-            F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
-        )[:other_quota])
-
-        selected_students = general_students + sc_st_students + other_students
-
-        for student in selected_students:
-            allotted_batches = CourseAllotment.objects.filter(
-                student=student
-            ).values_list('batch', flat=True)
+def allocate_paper(student, paper_no, allow_any_mdc=False):
+    """
+    Allocate a specific paper for a student
+    :param student: Student object
+    :param paper_no: Paper number (1-4)
+    :param allow_any_mdc: If True and paper_no=4, can allocate any available MDC
+    """
+    # Check if already allocated this paper
+    if CourseAllotment.objects.filter(student=student, paper_no=paper_no).exists():
+        return True
+    
+    # Get student's preferences for this paper
+    preferences = CoursePreference.objects.filter(
+        student=student, 
+        paper_no=paper_no
+    ).order_by('preference_number')
+    
+    # Get already allotted batches to avoid duplicates
+    allotted_batches = CourseAllotment.objects.filter(
+        student=student
+    ).values_list('batch', flat=True)
+    
+    # Try preferences first
+    for preference in preferences:
+        batch = preference.batch
+        if (batch.status and 
+            batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count() and
+            batch not in allotted_batches):
             
-            preferences = CoursePreference.objects.filter(
+            CourseAllotment.objects.create(
                 student=student, 
+                batch=batch, 
+                paper_no=paper_no
+            )
+            return True
+    
+    # For MDC (paper 4), try any available if allowed
+    if paper_no == 4 and allow_any_mdc:
+        available_mdc = Batch.objects.filter(
+            course__course_type__name__startswith='MDC',
+            course__semester=student.current_sem,
+            status=True
+        ).exclude(
+            id__in=allotted_batches
+        ).annotate(
+            allocated_count=Count('courseallotment')
+        ).filter(
+            course__seat_limit__gt=F('allocated_count')
+        ).order_by('allocated_count')  # Prefer less filled courses
+        
+        if available_mdc.exists():
+            CourseAllotment.objects.create(
+                student=student,
+                batch=available_mdc.first(),
                 paper_no=4
-            ).exclude(batch__in=allotted_batches).order_by('preference_number')
-
-            allocated = False
-            for preference in preferences:
-                batch = preference.batch
-                if batch.status and batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count():
-                    CourseAllotment.objects.create(
-                        student=student, 
-                        batch=batch, 
-                        paper_no=4
-                    )
-                    allocated = True
-                    break
-
-            if not allocated:
-                print(f"Student {student.admission_number} (Sem {semester}) could not be allocated Paper 4 (MDC). All preferences full.")
+            )
+            return True
+    
+    return False
     
 def index(request):
     return render(request, 'registration/login.html')
@@ -1238,20 +1246,33 @@ def student_register(request):
     return render(request, 'admin/student_register.html', {'form': form})
 @group_required('Admin')
 def download_sample_csv(request):
-    # Define CSV headers
+    """Download a sample CSV file with headers and example data"""
+    # Define CSV headers and sample data
     headers = [
-        "Admission Number", "Name", "Date of Birth", "Email", "Phone Number",
-        "Department", "Admission Category", "Admission Year",
-        "Pathway", "Current Semester", "PlusTwo Marks(normalized)"
+        "Admission Number", "Name", "Date of Birth (DD/MM/YYYY)", 
+        "Email", "Phone Number", "Department", "Admission Category", 
+        "Admission Year", "Pathway", "Current Semester", 
+        "PlusTwo Marks(normalized)"
     ]
     
+    # Example data row
+    example_data = [
+        "STU001", "John Doe", "15/05/2000", "john@example.com", 
+        "9876543210", "Computer Science", "General", "2023", 
+        "Single Major", "1", "85"
+    ]
 
-    # Create the HTTP response
     response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = 'attachment; filename="sample_students.csv"'
-
+    response["Content-Disposition"] = 'attachment; filename="student_upload_template.csv"'
+    
     writer = csv.writer(response)
-    writer.writerow(headers)  # Write headers
+    writer.writerow(headers)
+    writer.writerow(example_data)
+    writer.writerow(["", "", "", "", "", "", "", "", "", "", ""])  # Empty row for clarity
+    writer.writerow(["# Required Fields: Admission Number, Name, Date of Birth, Email"])
+    writer.writerow(["# Date Format: DD/MM/YYYY"])
+    writer.writerow(["# Phone Number: 10 digits only"])
+    
     return response
 
 @group_required('Admin')  
@@ -1260,128 +1281,200 @@ def bulk_student_upload(request):
         form = BulkStudentUploadForm(request.POST, request.FILES)
         if form.is_valid():
             csv_file = request.FILES["csv_file"]
-
-            if not csv_file.name.endswith(".csv"):
-                messages.error(request, "Please upload a valid CSV file.")
+            
+            # Validate file extension
+            if not csv_file.name.lower().endswith('.csv'):
+                messages.error(request, "Only CSV files are allowed.")
                 return redirect("bulk_student_upload")
-
+            
             try:
-                decoded_file = csv_file.read().decode("utf-8").splitlines()
+                decoded_file = csv_file.read().decode("utf-8-sig").splitlines()
                 reader = csv.DictReader(decoded_file)
-
-                students_to_create = []
-                users_to_create = []
-                existing_students = 0  # Counter for existing students
-                new_students = 0  # Counter for new students
-
-                # Ensure "Student" group exists
-                student_group, created = Group.objects.get_or_create(name="Student")
-
-                for row in reader:
-                    admission_number = row.get("Admission Number")
-                    if Student.objects.filter(admission_number=admission_number).exists():
-                        existing_students += 1
-                        continue  # Skip existing students
-
-                    name = row.get("Name")
-                    dob_str = row.get("Date of Birth")  
-                    email = row.get("Email")
-                    phone_number = row.get("Phone Number")
-                    department_name = row.get("Department")
-                    admission_category = row.get("Admission Category")
-                    pathway_name = row.get("Pathway")
-                    current_sem = row.get("Current Semester")
-                    normalized_marks = row.get("PlusTwo Marks(normalized)")
-                    admission_year = row.get("Admission Year")
-
-                    # Validate Date of Birth
-                    try:
-                        dob = datetime.strptime(dob_str, "%d/%m/%Y").date()  
-                        formatted_dob = dob.strftime("%d%m%Y")  
-                    except ValueError:
-                        messages.error(request, f"Invalid Date of Birth format: {dob_str}")
-                        return redirect("bulk_student_upload")
-
-                    # Validate Admission Year
-                    try:
-                        admission_year = int(admission_year)
-                        if admission_year < 2000 or admission_year > datetime.today().year:
-                            raise ValueError
-                    except ValueError:
-                        messages.error(request, f"Invalid Admission Year: {admission_year}")
-                        return redirect("bulk_student_upload")
-
-                    # Check for duplicate phone number
-                    if Student.objects.filter(phone_number=phone_number).exists():
-                        messages.error(request, f"Phone number '{phone_number}' already exists.")
-                        return redirect("bulk_student_upload")
-
-                    # Get related foreign key objects
-                    try:
-                        department = Department.objects.get(name=department_name)
-                    except Department.DoesNotExist:
-                        messages.error(request, f"Department '{department_name}' not found.")
-                        return redirect("bulk_student_upload")
-
-                    try:
-                        pathway = Pathway.objects.get(name=pathway_name)
-                    except Pathway.DoesNotExist:
-                        messages.error(request, f"Pathway '{pathway_name}' not found.")
-                        return redirect("bulk_student_upload")
-
-                    user = None
-                    if not User.objects.filter(username=admission_number).exists():
-                        user = User(username=admission_number, email=email)
-                        user.set_password(formatted_dob)
-                        users_to_create.append(user)
-
-                    student = Student(
-                        admission_number=admission_number,
-                        name=name,
-                        dob=dob,
-                        email=email,
-                        phone_number=phone_number,
-                        department=department,
-                        admission_category=admission_category,
-                        admission_year=admission_year,
-                        pathway=pathway,
-                        current_sem=int(current_sem),
-                        normalized_marks=int(normalized_marks),
-                        user=user if user else None
+                
+                if not reader.fieldnames:
+                    messages.error(request, "The CSV file is empty or improperly formatted.")
+                    return redirect("bulk_student_upload")
+                
+                required_fields = [
+                    "Admission Number", "Name", "Date of Birth (DD/MM/YYYY)", 
+                    "Email", "Department", "Pathway"
+                ]
+                
+                # Validate CSV headers
+                missing_fields = [field for field in required_fields 
+                                if field not in reader.fieldnames]
+                if missing_fields:
+                    messages.error(
+                        request, 
+                        f"Missing required columns: {', '.join(missing_fields)}"
                     )
-                    students_to_create.append(student)
-                    new_students += 1  
-
-                if users_to_create:
-                    User.objects.bulk_create(users_to_create)
-
-                # Assign users to "Student" group
-                for user in users_to_create:
-                    user.groups.add(student_group)
-
-                for student in students_to_create:
-                    student.user = User.objects.get(username=student.admission_number)
-
-                if students_to_create:
-                    Student.objects.bulk_create(students_to_create)
-
-                # Show appropriate success message
-                if new_students > 0:
-                    messages.success(request, f"{new_students} students uploaded successfully!")
-                if existing_students > 0 and new_students == 0:
-                    messages.warning(request, "All students already exist. No new students uploaded.")
-
-                return redirect("bulk_student_upload")
-
+                    return redirect("bulk_student_upload")
+                
+                with transaction.atomic():
+                    student_group = Group.objects.get_or_create(name="Student")[0]
+                    students_to_create = []
+                    users_to_create = []
+                    existing_count = 0
+                    success_count = 0
+                    errors = []
+                    
+                    for row_num, row in enumerate(reader, start=2):  # Start at 2 for header row
+                        try:
+                            # Validate required fields
+                            admission_number = row["Admission Number"].strip()
+                            if not admission_number:
+                                raise ValidationError("Admission Number is required")
+                                
+                            if Student.objects.filter(admission_number=admission_number).exists():
+                                existing_count += 1
+                                continue
+                            
+                            # Parse and validate date
+                            dob_str = row["Date of Birth (DD/MM/YYYY)"].strip()
+                            try:
+                                dob = datetime.strptime(dob_str, "%d/%m/%Y").date()
+                                if dob > date.today():
+                                    raise ValidationError("Date of Birth cannot be in the future")
+                            except ValueError:
+                                raise ValidationError("Invalid date format. Use DD/MM/YYYY")
+                            
+                            # Validate email
+                            email = row["Email"].strip().lower()
+                            if not email or "@" not in email:
+                                raise ValidationError("Valid email is required")
+                            if Student.objects.filter(email=email).exists():
+                                raise ValidationError("Email already exists")
+                            
+                            # Validate phone number if provided
+                            phone_number = row.get("Phone Number", "").strip()
+                            if phone_number:
+                                if not phone_number.isdigit() or len(phone_number) != 10:
+                                    raise ValidationError("Phone number must be 10 digits")
+                                if Student.objects.filter(phone_number=phone_number).exists():
+                                    raise ValidationError("Phone number already exists")
+                            
+                            # Validate and get foreign key relationships
+                            department = Department.objects.get(
+                                name__iexact=row["Department"].strip()
+                            )
+                            pathway = Pathway.objects.get(
+                                name__iexact=row["Pathway"].strip()
+                            )
+                            
+                            # Validate admission category
+                            admission_category = row.get("Admission Category", "General").strip()
+                            valid_categories = dict(Student.CATEGORY)
+                            if admission_category not in valid_categories:
+                                raise ValidationError(f"Invalid admission category. Valid options: {', '.join(valid_categories.keys())}")
+                            
+                            # Validate admission year
+                            admission_year = row.get("Admission Year", str(date.today().year)).strip()
+                            try:
+                                admission_year = int(admission_year)
+                                if not (2000 <= admission_year <= date.today().year):
+                                    raise ValidationError(f"Admission year must be between 2000 and {date.today().year}")
+                            except ValueError:
+                                raise ValidationError("Admission year must be a number")
+                            
+                            # Validate current semester
+                            current_sem = row.get("Current Semester", "1").strip()
+                            try:
+                                current_sem = int(current_sem)
+                                if not (1 <= current_sem <= 8):
+                                    raise ValidationError("Current semester must be between 1 and 8")
+                            except ValueError:
+                                raise ValidationError("Current semester must be a number")
+                            
+                            # Validate normalized marks
+                            normalized_marks = row.get("PlusTwo Marks(normalized)", "0").strip()
+                            try:
+                                normalized_marks = int(normalized_marks)
+                                if not (0 <= normalized_marks <= 100):
+                                    raise ValidationError("Normalized marks must be between 0 and 100")
+                            except ValueError:
+                                raise ValidationError("Normalized marks must be a number")
+                            
+                            # Create user
+                            if not User.objects.filter(username=admission_number).exists():
+                                user = User(
+                                    username=admission_number,
+                                    email=email,
+                                    is_active=True
+                                )
+                                user.set_password(dob.strftime('%d%m%Y'))
+                                users_to_create.append(user)
+                            
+                            # Create student
+                            student = Student(
+                                admission_number=admission_number,
+                                name=row["Name"].strip(),
+                                dob=dob,
+                                email=email,
+                                phone_number=phone_number or None,
+                                department=department,
+                                admission_category=admission_category,
+                                admission_year=admission_year,
+                                pathway=pathway,
+                                current_sem=current_sem,
+                                normalized_marks=normalized_marks
+                            )
+                            students_to_create.append(student)
+                            success_count += 1
+                            
+                        except Exception as e:
+                            errors.append(f"Row {row_num}: {str(e)}")
+                            continue
+                    
+                    # Bulk create in optimal order
+                    if users_to_create:
+                        User.objects.bulk_create(users_to_create)
+                        # Need to fetch users again to get their IDs
+                        created_users = User.objects.filter(
+                            username__in=[u.username for u in users_to_create]
+                        )
+                        user_map = {user.username: user for user in created_users}
+                        
+                        # Assign users to students
+                        for student in students_to_create:
+                            student.user = user_map.get(student.admission_number)
+                    
+                    if students_to_create:
+                        Student.objects.bulk_create(students_to_create)
+                    
+                    # Assign student group to new users
+                    if users_to_create:
+                        for user in created_users:
+                            user.groups.add(student_group)
+                    
+                    # Prepare result message
+                    result_msg = []
+                    if success_count:
+                        result_msg.append(f"Successfully created {success_count} students")
+                    if existing_count:
+                        result_msg.append(f"Skipped {existing_count} existing students")
+                    if errors:
+                        result_msg.append(f"{len(errors)} rows had errors")
+                        messages.warning(request, "<br>".join(result_msg))
+                        messages.error(request, "<br>".join(errors[:10]))  # Show first 10 errors
+                    elif success_count:
+                        messages.success(request, "<br>".join(result_msg))
+                    else:
+                        messages.warning(request, "No new students were created")
+                    
+                    return redirect("bulk_student_upload")
+            
             except Exception as e:
                 messages.error(request, f"Error processing file: {str(e)}")
                 return redirect("bulk_student_upload")
-
+    
     else:
         form = BulkStudentUploadForm()
-
-    return render(request, "admin/bulk_student_upload.html", {"form": form})
-
+    
+    return render(request, "admin/bulk_student_upload.html", {
+        "form": form,
+        "departments": Department.objects.all(),
+        "pathways": Pathway.objects.all()
+    })
 
 
 @group_required('Admin')  
