@@ -7,11 +7,12 @@
     <!-- Current Page & Home Link -->
     <div>
         <span class="me-3 text-muted">Manage Students | </span>
-        <a href="{% url 'admin_dashboard' %}" >
+        <a href="{% url 'admin_dashboard' %}">
             <i class="fas fa-home"></i> Home
         </a>
     </div>
 </div>
+
 <div class="container-fluid p-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="fw-bold">Student List</h2>
@@ -20,97 +21,167 @@
         </a>
     </div>
 
-    <!-- Display Django Messages -->
+    <!-- Django Messages -->
     {% if messages %}
-    
         {% for message in messages %}
         <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endfor %}
-  
     {% endif %}
 
-    <!-- Search Bar -->
-    <div class="input-group mb-3">
-        <input type="text" id="searchBox" class="form-control" placeholder="Search by Name, Admission Number.." onkeyup="searchTable()">
-        <span class="input-group-text"><i class="fas fa-search"></i></span>
+    <!-- Search and Filters -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="input-group w-50 me-2">
+            <input type="text" id="searchBox" class="form-control" placeholder="Search by Name, Admission Number.." onkeyup="filterTable()">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
+
+        <div class="d-flex">
+            <select class="form-select me-2" id="departmentFilter" onchange="filterTable()">
+                <option value="">All Departments</option>
+                <!-- Departments will be added by JavaScript -->
+            </select>
+
+            <select class="form-select" id="statusFilter" onchange="filterTable()">
+                <option value="">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+            </select>
+        </div>
     </div>
-   
-    <div class="card shadow-sm border-0 rounded-3 p-3">
+
+    <div class="">
         <div class="table-responsive">
             <table class="table table-bordered table-hover mt-2" id="studentTable">
                 <thead class="table-dark">
-                <tr>
-                    <th>Admission Number</th>
-                    <th>Name</th>
-                    <th>Department</th>
-                    <th>Email</th>
-                    <th>Phone Number</th>  <!-- New Field -->
-                    
-                    <th>Status</th>
-                    <th class="text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for student in students %}
-                <tr>
-                    <td>{{ student.admission_number }}</td>
-                    <td>
-                        <a href="{% url 'student_detail' student.id %}" class="text-decoration-none fw-bold">
-                            {{ student.name }}
-                        </a>
-                    <td>{{ student.department }}</td>
-                    </td>
-                    <td>{{ student.email }}</td>
-                    <td>{{ student.phone_number }}</td>  <!-- New Field -->
-                    
-                    <td>
-                        {% if student.status == 1 %}
-                            <span class="badge bg-success">Active</span>
-                        {% else %}
-                            <span class="badge bg-danger">Inactive</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <a href="{% url 'student_edit' student.id %}" class="btn btn-sm btn-warning">
-                            <i class="fas fa-edit"></i>
-                        </a>
-                        <a href="{% url 'student_delete' student.id %}" 
-                           class="btn btn-sm btn-danger"
-                           onclick="return confirm('Are you sure you want to delete {{ student.name }}?');">
-                            <i class="fas fa-trash-alt"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center">No students available.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    <tr>
+                        <th>Admission Number</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Email</th>
+                        <th>Phone Number</th>
+                        <th>Status</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ student.admission_number }}</td>
+                        <td>
+                            <a href="{% url 'student_detail' student.id %}" class="text-decoration-none fw-bold">
+                                {{ student.name }}
+                            </a>
+                        </td>
+                        <td>{{ student.department }}</td>
+                        <td>{{ student.email }}</td>
+                        <td>{{ student.phone_number }}</td>
+                        <td>
+                            {% if student.status == 1 %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'student_edit' student.id %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'student_delete' student.id %}" 
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Are you sure you want to delete {{ student.name }}?');">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                            
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No students available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- JavaScript for Search Functionality -->
+<style>
+    table{
+        padding: auto;;
+    }
+    th {
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
+        padding: 12px 16px;
+    }
+    td {
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
+        padding: 5px 16px;
+    }
+</style>
+
+<!-- JavaScript for Search and Filters -->
 <script>
-    function searchTable() {
+document.addEventListener("DOMContentLoaded", function() {
+    populateDepartmentFilter();
+});
+
+function populateDepartmentFilter() {
+    let table = document.getElementById("studentTable");
+    let departmentSet = new Set();
+
+    let rows = table.getElementsByTagName("tr");
+    for (let i = 1; i < rows.length; i++) {
+        let department = rows[i].getElementsByTagName("td")[2];
+        if (department) {
+            let deptText = department.innerText.trim();
+            if (deptText !== "") {
+                departmentSet.add(deptText);
+            }
+        }
+    }
+
+    let departmentFilter = document.getElementById("departmentFilter");
+    departmentSet = Array.from(departmentSet).sort();
+
+    departmentSet.forEach(dept => {
+        let option = document.createElement("option");
+        option.value = dept;
+        option.textContent = dept;
+        departmentFilter.appendChild(option);
+    });
+}
+
+function filterTable() {
     let input = document.getElementById("searchBox").value.toUpperCase();
+    let departmentFilter = document.getElementById("departmentFilter").value.toUpperCase();
+    let statusFilter = document.getElementById("statusFilter").value.toUpperCase();
     let table = document.getElementById("studentTable");
     let rows = table.getElementsByTagName("tr");
 
     for (let i = 1; i < rows.length; i++) {
-        let admissionNumber = rows[i].getElementsByTagName("td")[0]; // First column (Admission Number)
-        let name = rows[i].getElementsByTagName("td")[1]; // Second column (Name)
+        let admissionNumber = rows[i].getElementsByTagName("td")[0];
+        let name = rows[i].getElementsByTagName("td")[1];
+        let department = rows[i].getElementsByTagName("td")[2];
+        let status = rows[i].getElementsByTagName("td")[5];
 
-        if (admissionNumber && name) {
+        if (admissionNumber && name && department && status) {
             let admissionText = admissionNumber.innerText.toUpperCase();
             let nameText = name.innerText.toUpperCase();
+            let departmentText = department.innerText.toUpperCase();
+            let statusText = status.innerText.toUpperCase();
 
-            if (admissionText.includes(input) || nameText.includes(input)) {
+            if (
+                (admissionText.includes(input) || nameText.includes(input)) &&
+                (departmentFilter === "" || departmentText === departmentFilter) &&
+                (statusFilter === "" || statusText.includes(statusFilter))
+            ) {
                 rows[i].style.display = "";
             } else {
                 rows[i].style.display = "none";
@@ -118,6 +189,5 @@
         }
     }
 }
-
 </script>
 {% endblock %}
