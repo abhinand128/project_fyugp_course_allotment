@@ -44,6 +44,11 @@
                 <!-- Departments will be added by JavaScript -->
             </select>
 
+            <select class="form-select me-2" id="pathwayFilter" onchange="filterTable()">
+                <option value="">All Pathways</option>
+                <!-- Pathways will be added by JavaScript -->
+            </select>
+
             <select class="form-select" id="statusFilter" onchange="filterTable()">
                 <option value="">All Status</option>
                 <option value="Active">Active</option>
@@ -60,7 +65,7 @@
                         <th>Admission Number</th>
                         <th>Name</th>
                         <th>Department</th>
-                        <th>Email</th>
+                        <th>Pathway</th>
                         <th>Phone Number</th>
                         <th>Status</th>
                         <th class="text-center">Actions</th>
@@ -76,7 +81,7 @@
                             </a>
                         </td>
                         <td>{{ student.department }}</td>
-                        <td>{{ student.email }}</td>
+                        <td>{{ student.pathway }}</td>
                         <td>{{ student.phone_number }}</td>
                         <td>
                             {% if student.status == 1 %}
@@ -99,7 +104,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center">No students available.</td>
+                        <td colspan="8" class="text-center">No students available.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -130,6 +135,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     populateDepartmentFilter();
+    populatePathwayFilter();
 });
 
 function populateDepartmentFilter() {
@@ -158,9 +164,36 @@ function populateDepartmentFilter() {
     });
 }
 
+function populatePathwayFilter() {
+    let table = document.getElementById("studentTable");
+    let pathwaySet = new Set();
+
+    let rows = table.getElementsByTagName("tr");
+    for (let i = 1; i < rows.length; i++) {
+        let pathway = rows[i].getElementsByTagName("td")[3]; 
+        if (pathway) {
+            let pathwayText = pathway.innerText.trim();
+            if (pathwayText !== "") {
+                pathwaySet.add(pathwayText);
+            }
+        }
+    }
+
+    let pathwayFilter = document.getElementById("pathwayFilter");
+    pathwaySet = Array.from(pathwaySet).sort();
+
+    pathwaySet.forEach(path => {
+        let option = document.createElement("option");
+        option.value = path;
+        option.textContent = path;
+        pathwayFilter.appendChild(option);
+    });
+}
+
 function filterTable() {
     let input = document.getElementById("searchBox").value.toUpperCase();
     let departmentFilter = document.getElementById("departmentFilter").value.toUpperCase();
+    let pathwayFilter = document.getElementById("pathwayFilter").value.toUpperCase();
     let statusFilter = document.getElementById("statusFilter").value.toUpperCase();
     let table = document.getElementById("studentTable");
     let rows = table.getElementsByTagName("tr");
@@ -169,17 +202,20 @@ function filterTable() {
         let admissionNumber = rows[i].getElementsByTagName("td")[0];
         let name = rows[i].getElementsByTagName("td")[1];
         let department = rows[i].getElementsByTagName("td")[2];
-        let status = rows[i].getElementsByTagName("td")[5];
+        let pathway = rows[i].getElementsByTagName("td")[3];
+        let status = rows[i].getElementsByTagName("td")[6];
 
-        if (admissionNumber && name && department && status) {
+        if (admissionNumber && name && department && pathway && status) {
             let admissionText = admissionNumber.innerText.toUpperCase();
             let nameText = name.innerText.toUpperCase();
             let departmentText = department.innerText.toUpperCase();
+            let pathwayText = pathway.innerText.toUpperCase();
             let statusText = status.innerText.toUpperCase();
 
             if (
                 (admissionText.includes(input) || nameText.includes(input)) &&
                 (departmentFilter === "" || departmentText === departmentFilter) &&
+                (pathwayFilter === "" || pathwayText === pathwayFilter) &&
                 (statusFilter === "" || statusText.includes(statusFilter))
             ) {
                 rows[i].style.display = "";

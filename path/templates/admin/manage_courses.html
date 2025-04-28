@@ -1,5 +1,5 @@
 {% extends 'admin_base.html' %}
-
+{% load custom_filters %}
 {% block title %}Manage Courses{% endblock %}
 
 {% block content %}
@@ -9,7 +9,7 @@
     <!-- Current Page & Home Link -->
     <div>
         <span class="me-3 text-muted">Manage Courses | </span>
-        <a href="{% url 'admin_dashboard' %}" >
+        <a href="{% url 'admin_dashboard' %}">
             <i class="fas fa-home"></i> Home
         </a>
     </div>
@@ -17,61 +17,53 @@
 
 <div class="container-fluid p-3">
 
-    <!-- Title and Buttons aligned in a straight line -->
+    <!-- Title and Add Button -->
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h1 class="fw-bold">Course Lists</h1> <!-- Removed bottom margin for better alignment -->
-        <div>
-            <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterForm">
-                <i class="fas fa-filter"></i> Filter Courses
-            </button>
-            <a href="{% url 'add_course' %}" class="btn btn-success me-2">
-                <i class="lni lni-graduation"></i><sup>+</sup> Add Course
-            </a>
-            
-        </div>
+        <h1 class="fw-bold">Course Lists</h1>
+        <a href="{% url 'add_course' %}" class="btn btn-success me-2">
+            <i class="lni lni-graduation"></i><sup>+</sup> Add Course
+        </a>
     </div>
 
-    <!-- Display Django Messages -->
+    <!-- Django Messages -->
     {% if messages %}
-    
         {% for message in messages %}
         <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endfor %}
-   
     {% endif %}
 
-    <!-- Filter Form -->
-    <div class="collapse" id="filterForm">
-        <form method="get" class="mt-3">
-            <div class="row g-3 align-items-end mb-3">
-                <div class="col-md-3">
-                    <label class="form-label">Course Type:</label>
-                    {{ form.course_type }}
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Department:</label>
-                    {{ form.department }}
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Semester:</label>
-                    {{ form.semester }}
-                </div>
-                <div class="col-md-3 d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search"></i> Apply Filters
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
+    <!-- Search and Filters -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="input-group w-50 me-2">
+            <input type="text" id="searchBox" class="form-control" placeholder="Search by Course Name, Code..." onkeyup="filterTable()">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
 
-    <!-- Search Bar -->
-    <div class="input-group mb-3">
-        <input type="text" id="searchBox" class="form-control" placeholder="Search courses..." onkeyup="searchTable()">
-        <span class="input-group-text"><i class="fas fa-search"></i></span>
+        <div class="d-flex">
+            <select class="form-select me-2" id="courseTypeFilter" onchange="filterTable()">
+                <option value="">All Course Types</option>
+                {% for type in course_types %}
+                    <option value="{{ type }}">{{ type }}</option>
+                {% endfor %}
+            </select>
+
+            <select class="form-select me-2" id="departmentFilter" onchange="filterTable()">
+                <option value="">All Departments</option>
+                {% for department in departments %}
+                    <option value="{{ department }}">{{ department }}</option>
+                {% endfor %}
+            </select>
+
+            <select class="form-select" id="semesterFilter" onchange="filterTable()">
+                <option value="">All Semesters</option>
+                {% for sem in semesters %}
+                    <option value="{{ sem }}">{{ sem }}</option>
+                {% endfor %}
+            </select>
+        </div>
     </div>
 
     <!-- Courses Table -->
@@ -124,24 +116,38 @@
     </div>
 </div>
 
-<!-- JavaScript for Search Functionality -->
+<!-- JavaScript for Dynamic Filtering -->
 <script>
-    function searchTable() {
-        let input = document.getElementById("searchBox").value.toUpperCase();
-        let table = document.getElementById("courseTable");
-        let rows = table.getElementsByTagName("tr");
+function filterTable() {
+    let input = document.getElementById("searchBox").value.toUpperCase();
+    let courseTypeFilter = document.getElementById("courseTypeFilter").value.toUpperCase();
+    let departmentFilter = document.getElementById("departmentFilter").value.toUpperCase();
+    let semesterFilter = document.getElementById("semesterFilter").value.toUpperCase();
 
-        for (let i = 1; i < rows.length; i++) {
-            let cells = rows[i].getElementsByTagName("td");
-            let match = false;
-            for (let j = 1; j < cells.length - 1; j++) { // Skip No. & Actions columns
-                if (cells[j].innerText.toUpperCase().includes(input)) {
-                    match = true;
-                    break;
-                }
-            }
-            rows[i].style.display = match ? "" : "none";
+    let table = document.getElementById("courseTable");
+    let rows = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < rows.length; i++) {
+        let cells = rows[i].getElementsByTagName("td");
+        let courseCode = cells[1]?.innerText.toUpperCase();
+        let courseName = cells[2]?.innerText.toUpperCase();
+        let courseType = cells[3]?.innerText.toUpperCase();
+        let department = cells[4]?.innerText.toUpperCase();
+        let semester = cells[5]?.innerText.toUpperCase();
+
+        if (
+            (courseCode.includes(input) || courseName.includes(input)) &&
+            (courseTypeFilter === "" || courseType === courseTypeFilter) &&
+            (departmentFilter === "" || department === departmentFilter) &&
+            (semesterFilter === "" || semester === semesterFilter)
+        ) {
+            rows[i].style.display = "";
+        } else {
+            rows[i].style.display = "none";
         }
     }
+}
 </script>
 {% endblock %}
+
+

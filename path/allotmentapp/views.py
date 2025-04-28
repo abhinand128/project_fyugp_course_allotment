@@ -483,29 +483,24 @@ def edit_preferences(request):
 
 @group_required('Admin')
 def manage_courses(request):
-    """Display a list of courses with optional filters."""
-    form = CourseFilterForm(request.GET)  # Initialize the filter form
+    """Display a list of courses for dynamic filtering (no Apply button)."""
     courses = Course.objects.all()
 
-    # Apply filters if the form is valid
-    if form.is_valid():
-        course_type = form.cleaned_data.get('course_type')
-        department = form.cleaned_data.get('department')
-        semester = form.cleaned_data.get('semester')
-
-        if course_type:
-            courses = courses.filter(course_type__name__startswith=course_type)
-        if department:
-            courses = courses.filter(department=department)
-        if semester:
-            courses = courses.filter(semester=semester)
+    # Prepare distinct filter options
+    course_types = Course.objects.values_list('course_type__name', flat=True).distinct()
+    departments = Course.objects.values_list('department__name', flat=True).distinct()
+    semesters = Course.objects.values_list('semester', flat=True).distinct()
 
     context = {
         'courses': courses,
-        'form': form,
-        'page_name': 'Manage Courses',  # Passed dynamically
+        'course_types': course_types,
+        'departments': departments,
+        'semesters': semesters,
+        'page_name': 'Manage Courses',
     }
     return render(request, 'admin/manage_courses.html', context)
+
+
 
 @group_required('Admin')
 def add_course(request):
@@ -768,13 +763,18 @@ def first_sem_allotment(request):
         'coursepreference_set__batch__course'
     ).order_by('admission_number')
 
+    # Calculate student statistics
+    total_students = students.count()
+    
     # Identify students who haven't submitted preferences
-    students_without_preferences = [
-        student.admission_number
-        for student in students
+    students_without_preferences_list = [
+        student for student in students
         if not student.coursepreference_set.exists()
     ]
-
+    
+    students_without_preferences = len(students_without_preferences_list)
+    students_with_preferences = total_students - students_without_preferences
+    
     # Get unique paper numbers and their maximum preferences
     paper_preferences = CoursePreference.objects.filter(
         student__current_sem=1
@@ -789,9 +789,39 @@ def first_sem_allotment(request):
             paper_options[paper_no] = []
         paper_options[paper_no].append(pref_no)
 
+    # Calculate department-wise statistics
+    department_stats = []
+    departments = set(student.department for student in students)
+    for dept in departments:
+        dept_students = [s for s in students if s.department == dept]
+        dept_total = len(dept_students)
+        dept_complete = len([s for s in dept_students if s.coursepreference_set.exists()])
+        dept_pending = dept_total - dept_complete
+        department_stats.append({
+            'name': dept.name,
+            'total': dept_total,
+            'complete': dept_complete,
+            'pending': dept_pending
+        })
+
+    # Calculate pathway-wise statistics
+    pathway_stats = []
+    pathways = set(student.pathway for student in students if student.pathway)
+    for pathway in pathways:
+        pathway_students = [s for s in students if s.pathway == pathway]
+        pathway_total = len(pathway_students)
+        pathway_complete = len([s for s in pathway_students if s.coursepreference_set.exists()])
+        pathway_pending = pathway_total - pathway_complete
+        pathway_stats.append({
+            'name': pathway,
+            'total': pathway_total,
+            'complete': pathway_complete,
+            'pending': pathway_pending
+        })
+
     if request.method == 'POST':
         if students_without_preferences:
-            missing_students = ", ".join(map(str, students_without_preferences))
+            missing_students = ", ".join(str(student.admission_number) for student in students_without_preferences_list)
             messages.error(request, f"The following students have not submitted their preferences: {missing_students}. Please ask them to submit before proceeding.")
         else:
             try:
@@ -807,6 +837,11 @@ def first_sem_allotment(request):
         'students': students,
         'paper_options': paper_options,
         'students_without_preferences': students_without_preferences,
+        'total_students': total_students,
+        'students_with_preferences': students_with_preferences,
+        'students_missing_preferences': students_without_preferences_list,
+        'department_stats': department_stats,
+        'pathway_stats': pathway_stats,
     }
 
     return render(request, 'admin/first_sem_allotment.html', context)
@@ -882,7 +917,7 @@ def second_sem_allotment(request):
         messages.warning(request, "Courses are already allocated for the second semester in the current academic year!")
         return render(request, 'admin/second_sem_allotment.html', {'already_allocated': True})
 
-    # Get all first-semester students
+    # Get all second-semester students
     students = Student.objects.filter(
         current_sem=2
     ).prefetch_related(
@@ -891,13 +926,18 @@ def second_sem_allotment(request):
         'coursepreference_set__batch__course'
     ).order_by('admission_number')
 
+    # Calculate student statistics
+    total_students = students.count()
+    
     # Identify students who haven't submitted preferences
-    students_without_preferences = [
-        student.admission_number
-        for student in students
+    students_without_preferences_list = [
+        student for student in students
         if not student.coursepreference_set.exists()
     ]
-
+    
+    students_without_preferences = len(students_without_preferences_list)
+    students_with_preferences = total_students - students_without_preferences
+    
     # Get unique paper numbers and their maximum preferences
     paper_preferences = CoursePreference.objects.filter(
         student__current_sem=2
@@ -912,9 +952,39 @@ def second_sem_allotment(request):
             paper_options[paper_no] = []
         paper_options[paper_no].append(pref_no)
 
+    # Calculate department-wise statistics
+    department_stats = []
+    departments = set(student.department for student in students)
+    for dept in departments:
+        dept_students = [s for s in students if s.department == dept]
+        dept_total = len(dept_students)
+        dept_complete = len([s for s in dept_students if s.coursepreference_set.exists()])
+        dept_pending = dept_total - dept_complete
+        department_stats.append({
+            'name': dept.name,
+            'total': dept_total,
+            'complete': dept_complete,
+            'pending': dept_pending
+        })
+
+    # Calculate pathway-wise statistics
+    pathway_stats = []
+    pathways = set(student.pathway for student in students if student.pathway)
+    for pathway in pathways:
+        pathway_students = [s for s in students if s.pathway == pathway]
+        pathway_total = len(pathway_students)
+        pathway_complete = len([s for s in pathway_students if s.coursepreference_set.exists()])
+        pathway_pending = pathway_total - pathway_complete
+        pathway_stats.append({
+            'name': pathway,
+            'total': pathway_total,
+            'complete': pathway_complete,
+            'pending': pathway_pending
+        })
+
     if request.method == 'POST':
         if students_without_preferences:
-            missing_students = ", ".join(map(str, students_without_preferences))
+            missing_students = ", ".join(str(student.admission_number) for student in students_without_preferences_list)
             messages.error(request, f"The following students have not submitted their preferences: {missing_students}. Please ask them to submit before proceeding.")
         else:
             try:
@@ -930,6 +1000,11 @@ def second_sem_allotment(request):
         'students': students,
         'paper_options': paper_options,
         'students_without_preferences': students_without_preferences,
+        'total_students': total_students,
+        'students_with_preferences': students_with_preferences,
+        'students_missing_preferences': students_without_preferences_list,
+        'department_stats': department_stats,
+        'pathway_stats': pathway_stats,
     }
 
     return render(request, 'admin/second_sem_allotment.html', context)
@@ -1576,7 +1651,16 @@ def hod_student_list(request):
     # Get students only from the HOD's department
     students = Student.objects.filter(department=request.user.hod.department).order_by('admission_number')
     
-    return render(request, 'hod/student_list.html', {'students': students})
+    # Get all pathways for this department (for the filter dropdown)
+    pathways = Pathway.objects.all()
+    
+    context = {
+        'students': students,
+        'pathways': pathways,
+        'page_title': 'Student Management'
+    }
+    
+    return render(request, 'hod/student_list.html', context)
 
 from django.shortcuts import get_object_or_404
 

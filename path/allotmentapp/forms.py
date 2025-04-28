@@ -141,15 +141,15 @@ class CourseSelectionFormSem1(BaseCourseSelectionForm):
         # DSC 2 options
         option_count = dsc_2_batches.count() if self.student.pathway.name == "Double Major" else 3
         for i in range(1, option_count + 1):
-            self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'DSC 2 Option {i}')
+            self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'Option {i}')
 
         # DSC 3 options
         for i in range(1, 4):
-            self.create_batch_field(f'dsc_3_option_{i}', dsc_3_batches, f'DSC 3 Option {i}')
+            self.create_batch_field(f'dsc_3_option_{i}', dsc_3_batches, f'Option {i}')
 
         # MDC options
         for i in range(1, mdc_filtered_batches.count() + 1):
-            self.create_batch_field(f'mdc_option_{i}', mdc_filtered_batches, f'MDC Option {i}')
+            self.create_batch_field(f'mdc_option_{i}', mdc_filtered_batches, f'Option {i}')
 
     def get_field_order(self):
         return ['dsc_1'] + \
@@ -195,16 +195,16 @@ class CourseSelectionFormSem2(BaseCourseSelectionForm):
         # DSC 2 options
         option_count = dsc_2_batches.count() if self.student.pathway.name == "Double Major" else 3
         for i in range(1, option_count + 1):
-            self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'DSC 2 Option {i}')
+            self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'Option {i}')
 
         # DSC 3 options
         option_count = dsc_3_batches.count() if self.student.pathway.name == "Double Major" else 3
         for i in range(1, option_count + 1):
-            self.create_batch_field(f'dsc_3_option_{i}', dsc_3_batches, f'DSC 3 Option {i}')
+            self.create_batch_field(f'dsc_3_option_{i}', dsc_3_batches, f'Option {i}')
 
         # MDC options
         for i in range(1, mdc_filtered_batches.count() + 1):
-            self.create_batch_field(f'mdc_option_{i}', mdc_filtered_batches, f'MDC Option {i}')
+            self.create_batch_field(f'mdc_option_{i}', mdc_filtered_batches, f'Option {i}')
 
     def get_field_order(self):
         return ['dsc_1'] + \
