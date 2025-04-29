@@ -4,6 +4,7 @@ from allotmentapp import views
 urlpatterns = [
     path('', views.index, name='home'),
     path("login/", views.common_login, name="common_login"),
+    path('logout/', views.common_logout, name='common_logout'),
     path('reset-password/',views.admin_reset_password, name='admin_reset_password'),
     path('reset-password-student/',views.student_reset_password, name='student_reset_password'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
