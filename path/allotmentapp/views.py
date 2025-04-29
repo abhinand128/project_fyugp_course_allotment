@@ -203,6 +203,9 @@ def common_login(request):
 
     return render(request, "registration/login.html")
 
+def common_logout(request):
+    logout(request)
+    return redirect('home') 
 
 def admin_reset_password(request):
     # Ensure only users in the "Admin" group can access
