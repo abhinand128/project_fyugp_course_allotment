@@ -188,35 +188,41 @@ function populatePathwayFilter() {
 
 function filterTable() {
     let input = document.getElementById("searchBox").value.toUpperCase();
-    let departmentFilter = document.getElementById("departmentFilter").value.toUpperCase();
-    let pathwayFilter = document.getElementById("pathwayFilter").value.toUpperCase();
-    let statusFilter = document.getElementById("statusFilter").value.toUpperCase();
+    let departmentFilter = document.getElementById("departmentFilter").value;
+    let pathwayFilter = document.getElementById("pathwayFilter").value;
     let table = document.getElementById("studentTable");
     let rows = table.getElementsByTagName("tr");
 
     for (let i = 1; i < rows.length; i++) {
-        let admissionNumber = rows[i].getElementsByTagName("td")[0];
-        let name = rows[i].getElementsByTagName("td")[1];
-        let department = rows[i].getElementsByTagName("td")[2];
-        let pathway = rows[i].getElementsByTagName("td")[3];
-        let status = rows[i].getElementsByTagName("td")[6];
-
+        let row = rows[i];
+        if (!row.getElementsByTagName("td").length) continue; // Skip if no td elements (like empty rows)
+        
+        let admissionNumber = row.getElementsByTagName("td")[0];
+        let name = row.getElementsByTagName("td")[1];
+        let department = row.getElementsByTagName("td")[2];
+        let pathway = row.getElementsByTagName("td")[3];
+        let status = row.getElementsByTagName("td")[5]; // Correct index for status column
+        
         if (admissionNumber && name && department && pathway && status) {
             let admissionText = admissionNumber.innerText.toUpperCase();
             let nameText = name.innerText.toUpperCase();
-            let departmentText = department.innerText.toUpperCase();
-            let pathwayText = pathway.innerText.toUpperCase();
-            let statusText = status.innerText.toUpperCase();
+            let departmentText = department.innerText;
+            let pathwayText = pathway.innerText;
+            
+            let searchMatch = input === "" || 
+                              admissionText.includes(input) || 
+                              nameText.includes(input);
+                              
+            let departmentMatch = departmentFilter === "" || 
+                                 departmentText === departmentFilter;
+                                 
+            let pathwayMatch = pathwayFilter === "" || 
+                              pathwayText === pathwayFilter;
 
-            if (
-                (admissionText.includes(input) || nameText.includes(input)) &&
-                (departmentFilter === "" || departmentText === departmentFilter) &&
-                (pathwayFilter === "" || pathwayText === pathwayFilter) &&
-                (statusFilter === "" || statusText.includes(statusFilter))
-            ) {
-                rows[i].style.display = "";
+            if (searchMatch && departmentMatch && pathwayMatch) {
+                row.style.display = "";
             } else {
-                rows[i].style.display = "none";
+                row.style.display = "none";
             }
         }
     }
