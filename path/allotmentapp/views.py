@@ -1390,8 +1390,6 @@ def bulk_student_upload(request):
                 
                 with transaction.atomic():
                     student_group = Group.objects.get_or_create(name="Student")[0]
-                    students_to_create = []
-                    users_to_create = []
                     existing_count = 0
                     success_count = 0
                     errors = []
@@ -1472,17 +1470,25 @@ def bulk_student_upload(request):
                             except ValueError:
                                 raise ValidationError("Normalized marks must be a number")
                             
-                            # Create user
-                            if not User.objects.filter(username=admission_number).exists():
-                                user = User(
-                                    username=admission_number,
-                                    email=email,
-                                    is_active=True
-                                )
-                                user.set_password(dob.strftime('%d%m%Y'))
-                                users_to_create.append(user)
+                            # Create user if it doesn't exist
+                            username = admission_number
+                            password = dob.strftime('%d/%m/%y')
                             
-                            # Create student
+                            # Check if user already exists
+                            user = None
+                            if User.objects.filter(username=username).exists():
+                                user = User.objects.get(username=username)
+                            else:
+                                # Create the user individually so save() method is called
+                                user = User.objects.create_user(
+                                    username=username,
+                                    email=email,
+                                    password=password  # This correctly hashes the password
+                                )
+                                user.groups.add(student_group)
+                                
+                            # Create the student individually to ensure save() method is called
+                            # This will handle the user relationship correctly
                             student = Student(
                                 admission_number=admission_number,
                                 name=row["Name"].strip(),
@@ -1494,35 +1500,15 @@ def bulk_student_upload(request):
                                 admission_year=admission_year,
                                 pathway=pathway,
                                 current_sem=current_sem,
-                                normalized_marks=normalized_marks
+                                normalized_marks=normalized_marks,
+                                user=user  # Explicitly assign the user
                             )
-                            students_to_create.append(student)
+                            student.save()  # This will call the save method and handle any cleanup
                             success_count += 1
                             
                         except Exception as e:
                             errors.append(f"Row {row_num}: {str(e)}")
                             continue
-                    
-                    # Bulk create in optimal order
-                    if users_to_create:
-                        User.objects.bulk_create(users_to_create)
-                        # Need to fetch users again to get their IDs
-                        created_users = User.objects.filter(
-                            username__in=[u.username for u in users_to_create]
-                        )
-                        user_map = {user.username: user for user in created_users}
-                        
-                        # Assign users to students
-                        for student in students_to_create:
-                            student.user = user_map.get(student.admission_number)
-                    
-                    if students_to_create:
-                        Student.objects.bulk_create(students_to_create)
-                    
-                    # Assign student group to new users
-                    if users_to_create:
-                        for user in created_users:
-                            user.groups.add(student_group)
                     
                     # Prepare result message
                     result_msg = []
@@ -1553,7 +1539,6 @@ def bulk_student_upload(request):
         "departments": Department.objects.all(),
         "pathways": Pathway.objects.all()
     })
-
 
 @group_required('Admin')  
 def manage_students(request):
