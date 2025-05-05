@@ -486,20 +486,27 @@ def edit_preferences(request):
 
 @group_required('Admin')
 def manage_courses(request):
-    """Display a list of courses for dynamic filtering (no Apply button)."""
+    """Display a list of courses with optional filters."""
+    form = CourseFilterForm(request.GET)  # Initialize the filter form
     courses = Course.objects.all()
 
-    # Prepare distinct filter options
-    course_types = Course.objects.values_list('course_type__name', flat=True).distinct()
-    departments = Course.objects.values_list('department__name', flat=True).distinct()
-    semesters = Course.objects.values_list('semester', flat=True).distinct()
+    # Apply filters if the form is valid
+    if form.is_valid():
+        course_type = form.cleaned_data.get('course_type')
+        department = form.cleaned_data.get('department')
+        semester = form.cleaned_data.get('semester')
+
+        if course_type:
+            courses = courses.filter(course_type__name__startswith=course_type)
+        if department:
+            courses = courses.filter(department=department)
+        if semester:
+            courses = courses.filter(semester=semester)
 
     context = {
         'courses': courses,
-        'course_types': course_types,
-        'departments': departments,
-        'semesters': semesters,
-        'page_name': 'Manage Courses',
+        'form': form,
+        'page_name': 'Manage Courses',  # Passed dynamically
     }
     return render(request, 'admin/manage_courses.html', context)
 

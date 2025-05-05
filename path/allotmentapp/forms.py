@@ -139,8 +139,8 @@ class CourseSelectionFormSem1(BaseCourseSelectionForm):
         self.create_batch_field('dsc_1', dsc_1_batches, 'DSC 1')
         
         # DSC 2 options
-        option_count = dsc_2_batches.count() if self.student.pathway.name == "Double Major" else 3
-        for i in range(1, option_count + 1):
+        option_count = dsc_2_batches.count() if self.student.pathway.name == "Double Major" else 4
+        for i in range(1, option_count):
             self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'Option {i}')
 
         # DSC 3 options
