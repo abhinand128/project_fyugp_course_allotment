@@ -73,7 +73,7 @@ def allocate_courses(semester):
             F('first_sem_marks').desc(nulls_last=True) if semester == 2 else '-normalized_marks'
         )
         
-        # Allocate to quota students first
+        # Allocate to quota students first  
         quota_categories = [
             ("General", setting.calculate_general_quota()),
             (["SC", "ST"], setting.calculate_sc_st_quota()),
@@ -124,40 +124,49 @@ def allocate_paper(student, paper_no, allow_any_mdc=False):
         student=student
     ).values_list('batch', flat=True)
     
-    # Try preferences first
+    # Try preferences first - using select_for_update to lock batches
     for preference in preferences:
         batch = preference.batch
         if (batch.status and 
-            batch.course.seat_limit > CourseAllotment.objects.filter(batch=batch).count() and
+            batch.seat_limit > batch.seats_taken and  # Fixed comparison
             batch not in allotted_batches):
             
-            CourseAllotment.objects.create(
-                student=student, 
-                batch=batch, 
-                paper_no=paper_no
-            )
+            with transaction.atomic():
+                CourseAllotment.objects.create(
+                    student=student, 
+                    batch=batch, 
+                    paper_no=paper_no
+                )
+                # Update seats taken atomically
+                Batch.objects.filter(pk=batch.pk).update(
+                    seats_taken=F('seats_taken') + 1
+                )
             return True
     
-    # For MDC (paper 4), try any available if allowed
+    # For MDC allocation - fixed version
     if paper_no == 4 and allow_any_mdc:
         available_mdc = Batch.objects.filter(
             course__course_type__name__startswith='MDC',
             course__semester=student.current_sem,
-            status=True
+            status=True,
+            seat_limit__gt=F('seats_taken')  # Proper ORM comparison
         ).exclude(
             id__in=allotted_batches
         ).annotate(
-            allocated_count=Count('courseallotment')
-        ).filter(
-            course__seat_limit__gt=F('allocated_count')
-        ).order_by('allocated_count')  # Prefer less filled courses
+            available=F('seat_limit') - F('seats_taken')
+        ).order_by('seats_taken')
         
         if available_mdc.exists():
-            CourseAllotment.objects.create(
-                student=student,
-                batch=available_mdc.first(),
-                paper_no=4
-            )
+            batch = available_mdc.first()
+            with transaction.atomic():
+                CourseAllotment.objects.create(
+                    student=student,
+                    batch=batch,
+                    paper_no=4
+                )
+                Batch.objects.filter(pk=batch.pk).update(
+                    seats_taken=F('seats_taken') + 1
+                )
             return True
     
     return False
@@ -638,38 +647,34 @@ def manage_batches(request):
     """View, filter, bulk update, and bulk delete batches."""
     
     if request.method == "POST":
-        batch_ids = request.POST.getlist("batch_ids")  # Get selected batch IDs
-        action = request.POST.get("action")  # Get which action was triggered
+        # Handle batch actions separately from filtering
+        if 'action' in request.POST:  # This is a batch action request
+            batch_ids = request.POST.getlist("batch_ids")
+            action = request.POST.get("action")
 
-        if not batch_ids:
-            messages.warning(request, "No batches selected for action.")
-            return redirect("manage_batches")
-
-        if action == "update":
-            bulk_status = request.POST.get("bulk_status")
-
-            if bulk_status not in ["True", "False"]:
-                messages.error(request, "Invalid status selected.")
+            if not batch_ids:
+                messages.warning(request, "No batches selected for action.")
                 return redirect("manage_batches")
 
-            # Convert status from string to boolean
-            status_value = bulk_status == "True"
+            if action == "update":
+                bulk_status = request.POST.get("bulk_status")
+                if bulk_status not in ["True", "False"]:
+                    messages.error(request, "Invalid status selected.")
+                    return redirect("manage_batches")
 
-            # Bulk update selected batches
-            Batch.objects.filter(id__in=batch_ids).update(status=status_value)
+                status_value = bulk_status == "True"
+                Batch.objects.filter(id__in=batch_ids).update(status=status_value)
+                messages.success(request, f"Updated {len(batch_ids)} batches.")
 
-            messages.success(request, "Selected batches updated successfully.")
+            elif action == "delete":
+                Batch.objects.filter(id__in=batch_ids).delete()
+                messages.success(request, f"Deleted {len(batch_ids)} batches.")
 
-        elif action == "delete":
-            # Bulk delete selected batches
-            Batch.objects.filter(id__in=batch_ids).delete()
-            messages.success(request, "Selected batches deleted successfully.")
+            return redirect("manage_batches")
 
-        return redirect("manage_batches")
-
-    # Filtering logic
-    form = BatchFilterForm(request.GET)
-    batches = Batch.objects.all()
+    # Handle GET requests and filtering
+    form = BatchFilterForm(request.GET or None)
+    batches = Batch.objects.all().select_related('course')
 
     if form.is_valid():
         year = form.cleaned_data.get("year")
@@ -680,20 +685,23 @@ def manage_batches(request):
         if part:
             batches = batches.filter(part=part)
 
-    # Extract unique years from DB for dropdown
-    existing_years = Batch.objects.values_list("year", flat=True).distinct()
+    existing_years = sorted(
+        set(Batch.objects.values_list('year', flat=True)),
+        key=lambda x: x.split('-')[0],
+        reverse=True
+    )
 
     return render(
-        request, 
-        "admin/manage_batches.html", 
+        request,
+        "admin/manage_batches.html",
         {
             "batches": batches,
             "form": form,
-            "existing_years": existing_years,  # Only show years available in DB
+            "existing_years": existing_years,
             'page_name': 'Manage Batches',
+            'current_filters': request.GET.urlencode()  # Pass current filters
         }
     )
-
 @group_required('Admin')
 def delete_batch(request, batch_id):
     """Delete a batch."""

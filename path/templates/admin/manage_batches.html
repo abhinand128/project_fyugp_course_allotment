@@ -5,7 +5,6 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-0.1">
     <h1 class="mb-0"></h1>
-
     <div>
         <span class="me-3 text-muted">Manage Batches | </span>
         <a href="{% url 'admin_dashboard' %}">
@@ -15,11 +14,17 @@
 </div>
 
 <div class="container-fluid p-3">
+    <!-- Title and Buttons aligned in a straight line -->
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h1 class="fw-bold">Available Batches</h1>
-        <a href="{% url 'create_batch' %}" class="btn btn-success">
-            <i class="lni lni-graduation"></i><sup>+</sup> Create Batch
-        </a>
+        <div>
+            <button class="btn btn-primary me-2" type="button" data-bs-toggle="collapse" data-bs-target="#filterForm">
+                <i class="fas fa-filter"></i> Filter Batches
+            </button>
+            <a href="{% url 'create_batch' %}" class="btn btn-success">
+                <i class="lni lni-graduation"></i><sup>+</sup> Create Batch
+            </a>
+        </div>
     </div>
 
     {% if messages %}
@@ -33,61 +38,127 @@
     </div>
     {% endif %}
 
-    <!-- Search + Filters Row -->
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <div class="input-group">
-                <input type="text" id="searchInput" class="form-control" placeholder="Search batches..." onkeyup="filterTable()">
-                <span class="input-group-text"><i class="fas fa-search"></i></span>
+    <!-- Collapsible Filter Form -->
+    <div class="collapse" id="filterForm">
+        <form method="get" class="mt-3">
+            <div class="row g-3 align-items-end mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Year:</label>
+                    <select name="year" class="form-select">
+                        <option value="">All Years</option>
+                        {% for year in existing_years %}
+                            <option value="{{ year }}" {% if request.GET.year == year %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Part:</label>
+                    <select name="part" class="form-select">
+                        <option value="">All Parts</option>
+                        <option value="1" {% if request.GET.part == "1" %}selected{% endif %}>Part 1</option>
+                        <option value="2" {% if request.GET.part == "2" %}selected{% endif %}>Part 2</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                </div>
             </div>
-        </div>
-        <div class="col-md-3">
-            {{ form.year|add_class:"form-select" }}
-        </div>
-        <div class="col-md-3">
-            {{ form.part|add_class:"form-select" }}
-        </div>
+        </form>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="input-group mb-3">
+        <input type="text" id="searchBox" class="form-control" placeholder="Search batches..." onkeyup="searchTable()">
+        <span class="input-group-text"><i class="fas fa-search"></i></span>
     </div>
 
     <div class="card shadow-sm border-0 rounded-3 p-3">
-        <form method="post" action="{% url 'manage_batches' %}">
+        <form method="post" action="{% url 'manage_batches' %}?{{ request.GET.urlencode }}">
             {% csrf_token %}
-            <table class="table table-bordered table-hover mt-3" id="batch-table">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="text-center">
-                            <input type="checkbox" id="select-all">
-                        </th>
-                        <th>Batches</th>
-                        <th>Year</th>
-                        <th>Part</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for batch in batches %}
-                    <tr class="batch-row">
-                        <td class="text-center">
-                            <input type="checkbox" name="batch_ids" value="{{ batch.id }}">
-                        </td>
-                        <td class="batch-course">{{ batch.course }}</td>
-                        <td class="batch-year">{{ batch.year }}</td>
-                        <td class="batch-part">{{ batch.get_part_display }}</td>
-                        <td>
-                            {% if batch.status %}
-                                <span class="badge bg-success">Active</span>
-                            {% else %}
-                                <span class="badge bg-danger">Inactive</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center">No batches found.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            
+            <!-- Hidden fields to preserve filters -->
+            <input type="hidden" name="year" value="{{ request.GET.year }}">
+            <input type="hidden" name="part" value="{{ request.GET.part }}">
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mt-2" id="batchTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="text-center">
+                                <input type="checkbox" id="select-all">
+                            </th>
+                            <th>Batches</th>
+                            <th>Year</th>
+                            <th>Part</th>
+                            <th>Seats (Used/Total)</th>
+                            <th>Available</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for batch in batches %}
+                        <tr>
+                            <td class="text-center">
+                                <input type="checkbox" name="batch_ids" value="{{ batch.id }}">
+                            </td>
+                            <td>{{ batch.course }}</td>
+                            <td>{{ batch.year }}</td>
+                            <td>{{ batch.get_part_display }}</td>
+                            <td>
+                                {% if batch.status %}
+                                    {{ batch.seats_taken }} / {{ batch.seat_limit }}
+                                    <div class="progress mt-1" style="height: 5px;">
+                                        <div class="progress-bar 
+                                            {% if batch.fill_percentage > 90 %}bg-danger
+                                            {% elif batch.fill_percentage > 70 %}bg-warning
+                                            {% else %}bg-success{% endif %}" 
+                                            role="progressbar" 
+                                            style="width: {{ batch.fill_percentage }}%" 
+                                            aria-valuenow="{{ batch.fill_percentage }}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    - / {{ batch.seat_limit }}
+                                    <div class="progress mt-1" style="height: 5px;">
+                                        <div class="progress-bar bg-secondary" 
+                                            role="progressbar" 
+                                            style="width: 100%" 
+                                            aria-valuenow="100" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if batch.status %}
+                                    {{ batch.seats_available }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if batch.status %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No batches found matching your filters.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
             <!-- Bulk Actions -->
             <div class="row mt-3">
@@ -115,39 +186,30 @@
     </div>
 </div>
 
-<!-- JavaScript for Dynamic Filtering -->
 <script>
+// Select all checkbox functionality
 document.getElementById("select-all").addEventListener("change", function() {
     let checkboxes = document.querySelectorAll('input[name="batch_ids"]');
     checkboxes.forEach(checkbox => checkbox.checked = this.checked);
 });
 
-function filterTable() {
-    let searchInput = document.getElementById("searchInput").value.toLowerCase();
-    let yearFilter = document.getElementById("id_year").value;
-    let partFilter = document.getElementById("id_part").value;
+// Search functionality
+function searchTable() {
+    let input = document.getElementById("searchBox").value.toUpperCase();
+    let table = document.getElementById("batchTable");
+    let rows = table.getElementsByTagName("tr");
 
-    let rows = document.querySelectorAll(".batch-row");
-
-    rows.forEach(row => {
-        let course = row.querySelector(".batch-course").textContent.toLowerCase();
-        let year = row.querySelector(".batch-year").textContent;
-        let part = row.querySelector(".batch-part").textContent;
-
-        let matchesSearch = course.includes(searchInput) || year.includes(searchInput) || part.toLowerCase().includes(searchInput);
-        let matchesYear = !yearFilter || year === yearFilter;
-        let matchesPart = !partFilter || part === document.querySelector(`#id_part option[value="${partFilter}"]`).textContent;
-
-        if (matchesSearch && matchesYear && matchesPart) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
+    for (let i = 1; i < rows.length; i++) {
+        let cells = rows[i].getElementsByTagName("td");
+        let match = false;
+        for (let j = 1; j < cells.length - 1; j++) { // Skip checkbox & status columns
+            if (cells[j].innerText.toUpperCase().includes(input)) {
+                match = true;
+                break;
+            }
         }
-    });
+        rows[i].style.display = match ? "" : "none";
+    }
 }
-
-// Attach onchange event to year and part filters
-document.getElementById("id_year").addEventListener("change", filterTable);
-document.getElementById("id_part").addEventListener("change", filterTable);
 </script>
 {% endblock %}
