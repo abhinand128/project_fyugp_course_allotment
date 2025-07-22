@@ -108,54 +108,70 @@ class BaseCourseSelectionForm(forms.Form):
 
 class CourseSelectionFormSem1(BaseCourseSelectionForm):
     def setup_fields(self):
-        # Fetch Semester 1 batches
-        dsc_batches = Batch.objects.select_related('course', 'course__department').filter(
-            course__course_type__name__startswith='DSC',
+        # Fetch Semester 1 batches with exact course type matching
+        dsc1_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name='DSC1',
+            course__semester=1
+        )
+        dsc2_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name='DSC2',
+            course__semester=1
+        )
+        dsc3_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name='DSC3',
             course__semester=1
         )
         mdc_batches = Batch.objects.select_related('course', 'course__department').filter(
-            course__course_type__name__startswith='MDC',
+            course__course_type__name='MDC',
             course__semester=1
         )
 
         # Pathway-specific filtering
         if self.student.pathway.name == "Single Major":
-            dsc_1_batches = dsc_batches.filter(course__department=self.student.department)
-            dsc_2_batches = dsc_batches.exclude(course__department=self.student.department)
-            dsc_3_batches = dsc_batches.exclude(course__department=self.student.department)
-            mdc_filtered_batches = mdc_batches.exclude(course__department=self.student.department)
+            dsc1_filtered = dsc1_batches.filter(course__department=self.student.department)
+            dsc2_filtered = dsc2_batches.exclude(course__department=self.student.department)
+            dsc3_filtered = dsc3_batches.exclude(course__department=self.student.department)
+            mdc_filtered = mdc_batches.exclude(course__department=self.student.department)
         elif self.student.pathway.name == "Double Major":
-            dsc_1_batches = dsc_batches.filter(course__department=self.student.department)
-            dsc_2_batches = dsc_batches.filter(course__department=self.student.department)
-            dsc_3_batches = dsc_batches.exclude(course__department=self.student.department)
-            mdc_filtered_batches = mdc_batches.exclude(course__department=self.student.department)
+            dsc1_filtered = dsc1_batches.filter(course__department=self.student.department)
+            dsc2_filtered = dsc2_batches.filter(course__department=self.student.department)
+            dsc3_filtered = dsc3_batches.exclude(course__department=self.student.department)
+            mdc_filtered = mdc_batches.exclude(course__department=self.student.department)
         else:  # Single/Double Minor
-            dsc_1_batches = dsc_batches.filter(course__department=self.student.department)
-            dsc_2_batches = dsc_batches.exclude(course__department=self.student.department)
-            dsc_3_batches = dsc_batches.exclude(course__department=self.student.department)
-            mdc_filtered_batches = mdc_batches.exclude(course__department=self.student.department)
+            dsc1_filtered = dsc1_batches.filter(course__department=self.student.department)
+            dsc2_filtered = dsc2_batches.exclude(course__department=self.student.department)
+            dsc3_filtered = dsc3_batches.exclude(course__department=self.student.department)
+            mdc_filtered = mdc_batches.exclude(course__department=self.student.department)
 
-        # Create fields
-        self.create_batch_field('dsc_1', dsc_1_batches, 'DSC 1')
+        # DSC1 (always required, single option)
+        self.create_batch_field('dsc_1', dsc1_filtered, 'DSC 1', required=True)
         
-        # DSC 2 options
-        option_count = dsc_2_batches.count() if self.student.pathway.name == "Double Major" else 4
-        for i in range(1, option_count):
-            self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'Option {i}')
-
-        # DSC 3 options
+        # DSC2 (always show exactly 3 options)
         for i in range(1, 4):
-            self.create_batch_field(f'dsc_3_option_{i}', dsc_3_batches, f'Option {i}')
+            self.create_batch_field(f'dsc_2_option_{i}', dsc2_filtered, f'Option {i}', required=False)
 
-        # MDC options
-        for i in range(1, mdc_filtered_batches.count() + 1):
-            self.create_batch_field(f'mdc_option_{i}', mdc_filtered_batches, f'Option {i}')
+        # DSC3 (always show exactly 3 options)
+        for i in range(1, 4):
+            self.create_batch_field(f'dsc_3_option_{i}', dsc3_filtered, f'Option {i}', required=False)
+
+        # MDC (dynamic - show all available options)
+        for i, batch in enumerate(mdc_filtered, start=1):
+            self.create_batch_field(f'mdc_option_{i}', mdc_filtered, f'MDC Option {i}', required=False)
 
     def get_field_order(self):
-        return ['dsc_1'] + \
-               [f'dsc_2_option_{i}' for i in range(1, 4)] + \
-               [f'dsc_3_option_{i}' for i in range(1, 4)] + \
-               [f'mdc_option_{i}' for i in range(1, 6)]  # Assuming max 5 MDC options
+        field_order = ['dsc_1']
+        
+        # Add DSC2 options (always 1-3)
+        field_order += [f'dsc_2_option_{i}' for i in range(1, 4)]
+        
+        # Add DSC3 options (always 1-3)
+        field_order += [f'dsc_3_option_{i}' for i in range(1, 4)]
+        
+        # Add MDC options in order (dynamic)
+        field_order += sorted([f for f in self.fields if f.startswith('mdc_option_')], 
+                            key=lambda x: int(x.split('_')[-1]))
+        
+        return field_order
 
 class CourseSelectionFormSem2(BaseCourseSelectionForm):
     def setup_fields(self):
@@ -167,51 +183,67 @@ class CourseSelectionFormSem2(BaseCourseSelectionForm):
         paper_3_dept = sem1_allotments.filter(paper_no=3).first().batch.course.department if sem1_allotments.filter(paper_no=3).exists() else None
         paper_1_dept = sem1_allotments.filter(paper_no=1).first().batch.course.department if sem1_allotments.filter(paper_no=1).exists() else None
 
-        # Fetch Semester 2 batches
-        dsc_batches = Batch.objects.select_related('course', 'course__department').filter(
-            course__course_type__name__startswith='DSC',
+        # Fetch Semester 2 batches with exact course type matching
+        dsc1_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name='DSC1',
+            course__semester=2
+        )
+        dsc2_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name='DSC2',
+            course__semester=2
+        )
+        dsc3_batches = Batch.objects.select_related('course', 'course__department').filter(
+            course__course_type__name='DSC3',
             course__semester=2
         )
         mdc_batches = Batch.objects.select_related('course', 'course__department').filter(
-            course__course_type__name__startswith='MDC',
+            course__course_type__name='MDC',
             course__semester=2
         )
 
         # Pathway-specific filtering
         if self.student.pathway.name == "Double Major":
-            dsc_1_batches = dsc_batches.filter(course__department=paper_3_dept)
-            dsc_2_batches = dsc_batches.filter(course__department=paper_3_dept)
-            dsc_3_batches = dsc_batches.filter(course__department=paper_1_dept)
+            dsc1_filtered = dsc1_batches.filter(course__department=paper_3_dept)
+            dsc2_filtered = dsc2_batches.filter(course__department=paper_3_dept)
+            dsc3_filtered = dsc3_batches.filter(course__department=paper_1_dept)
         else:
-            dsc_1_batches = dsc_batches.filter(course__department=self.student.department)
-            dsc_2_batches = dsc_batches.exclude(course__department=self.student.department)
-            dsc_3_batches = dsc_batches.exclude(course__department=self.student.department)
+            dsc1_filtered = dsc1_batches.filter(course__department=self.student.department)
+            dsc2_filtered = dsc2_batches.exclude(course__department=self.student.department)
+            dsc3_filtered = dsc3_batches.exclude(course__department=self.student.department)
         
-        mdc_filtered_batches = mdc_batches.exclude(course__department=self.student.department)
+        mdc_filtered = mdc_batches.exclude(course__department=self.student.department)
 
-        # Create fields
-        self.create_batch_field('dsc_1', dsc_1_batches, 'DSC 1')
+        # DSC1 (always required, single option)
+        self.create_batch_field('dsc_1', dsc1_filtered, 'DSC 1', required=True)
         
-        # DSC 2 options
-        option_count = dsc_2_batches.count() if self.student.pathway.name == "Double Major" else 3
-        for i in range(1, option_count + 1):
-            self.create_batch_field(f'dsc_2_option_{i}', dsc_2_batches, f'Option {i}')
+        # DSC2 (always show exactly 3 options)
+        for i in range(1, 4):
+            self.create_batch_field(f'dsc_2_option_{i}', dsc2_filtered, f'Option {i}', required=False)
 
-        # DSC 3 options
-        option_count = dsc_3_batches.count() if self.student.pathway.name == "Double Major" else 3
-        for i in range(1, option_count + 1):
-            self.create_batch_field(f'dsc_3_option_{i}', dsc_3_batches, f'Option {i}')
+        # DSC3 (always show exactly 3 options)
+        for i in range(1, 4):
+            self.create_batch_field(f'dsc_3_option_{i}', dsc3_filtered, f'Option {i}', required=False)
 
-        # MDC options
-        for i in range(1, mdc_filtered_batches.count() + 1):
-            self.create_batch_field(f'mdc_option_{i}', mdc_filtered_batches, f'Option {i}')
+        # MDC (dynamic - show all available options)
+        for i, batch in enumerate(mdc_filtered, start=1):
+            self.create_batch_field(f'mdc_option_{i}', mdc_filtered, f'MDC Option {i}', required=False)
 
     def get_field_order(self):
-        return ['dsc_1'] + \
-               [f'dsc_2_option_{i}' for i in range(1, 4)] + \
-               [f'dsc_3_option_{i}' for i in range(1, 4)] + \
-               [f'mdc_option_{i}' for i in range(1, 6)]
-
+        field_order = ['dsc_1']
+        
+        # Add DSC2 options (always 1-3)
+        field_order += [f'dsc_2_option_{i}' for i in range(1, 4)]
+        
+        # Add DSC3 options (always 1-3)
+        field_order += [f'dsc_3_option_{i}' for i in range(1, 4)]
+        
+        # Add MDC options in order (dynamic)
+        field_order += sorted([f for f in self.fields if f.startswith('mdc_option_')], 
+                            key=lambda x: int(x.split('_')[-1]))
+        
+        return field_order
+    
+    
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
