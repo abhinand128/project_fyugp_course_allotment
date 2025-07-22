@@ -1,0 +1,61 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Swap History</h2>
+        <a href="{% url 'admin_course_swap' %}" class="btn btn-primary">
+            <i class="fas fa-exchange-alt me-2"></i> New Swap
+        </a>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Students</th>
+                            <th>Courses Swapped</th>
+                            <th>Initiated By</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for swap in swaps %}
+                        <tr>
+                            <td>{{ swap.swapped_at|date:"Y-m-d H:i" }}</td>
+                            <td>
+                                <div class="fw-bold">{{ swap.student1.name }}</div>
+                                <small>{{ swap.student1.admission_number }}</small>
+                                <div class="fw-bold mt-2">{{ swap.student2.name }}</div>
+                                <small>{{ swap.student2.admission_number }}</small>
+                            </td>
+                            <td>
+                                <div class="d-flex">
+                                    <div class="me-4">
+                                        <div class="text-danger small">Original:</div>
+                                        <div>{{ swap.old_allotment1.batch.course.course_code }}</div>
+                                        <div>{{ swap.old_allotment2.batch.course.course_code }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-success small">New:</div>
+                                        <div>{{ swap.new_allotment1.batch.course.course_code }}</div>
+                                        <div>{{ swap.new_allotment2.batch.course.course_code }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ swap.swapped_by.get_full_name|default:swap.swapped_by.username }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4">No swap history found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

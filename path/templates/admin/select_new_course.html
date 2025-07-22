@@ -1,0 +1,53 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <h2 class="mb-4">Select New Course for {{ student.name }}</h2>
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h5>Currently Enrolled in:</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Paper {{ current_allotment.paper_no }}:</strong> 
+               {{ current_allotment.batch.course.course_name }} ({{ current_allotment.batch }})</p>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5>Available Courses for Paper {{ current_allotment.paper_no }}</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'execute_course_change' %}">
+                {% csrf_token %}
+                <input type="hidden" name="student_id" value="{{ student.id }}">
+                <input type="hidden" name="current_allotment_id" value="{{ current_allotment.id }}">
+                
+                <div class="mb-3">
+                    <label class="form-label">Select New Course:</label>
+                    <select name="new_batch_id" class="form-select" required>
+                        {% for batch in eligible_batches %}
+                        <option value="{{ batch.id }}">
+                            {{ batch.course.course_name }} ({{ batch }}) - 
+                            {{ batch.seats_taken }}/{{ batch.course.seat_limit }} seats
+                        </option>
+                        {% empty %}
+                        <option disabled>No available courses matching requirements</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Reason for Change:</label>
+                    <textarea name="reason" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-exchange-alt me-2"></i> Process Change
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
