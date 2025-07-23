@@ -71,6 +71,9 @@ class CourseFilterForm(forms.Form):
         label="Semester"
     )
 
+from django import forms
+from .models import Batch, CourseAllotment
+
 class BaseCourseSelectionForm(forms.Form):
     """Base class with common functionality for semester selection forms"""
     
@@ -105,6 +108,7 @@ class BaseCourseSelectionForm(forms.Form):
             widget=forms.Select(attrs={'class': 'form-control'})
         )
         self.fields[name].label_from_instance = self.batch_label
+
 
 class CourseSelectionFormSem1(BaseCourseSelectionForm):
     def setup_fields(self):
@@ -144,47 +148,37 @@ class CourseSelectionFormSem1(BaseCourseSelectionForm):
             mdc_filtered = mdc_batches.exclude(course__department=self.student.department)
 
         # DSC1 (always required, single option)
-        self.create_batch_field('dsc_1', dsc1_filtered, '', required=True)
+        self.create_batch_field('dsc_1', dsc1_filtered, 'DSC 1', required=True)
         
-        # DSC2 (dynamic options - create fields based on available courses)
-        self.create_dynamic_options('dsc_2', dsc2_filtered, '', max_options=3)
+        # DSC2 options - create fields for all available batches
+        for i in range(1, min(dsc2_filtered.count(), 3) + 1):
+            self.create_batch_field(f'dsc_2_option_{i}', dsc2_filtered, f'Option {i}')
         
-        # DSC3 (dynamic options - create fields based on available courses)
-        self.create_dynamic_options('dsc_3', dsc3_filtered, '', max_options=3)
+        # DSC3 options - create fields for all available batches (up to 3)
+        for i in range(1, min(dsc3_filtered.count(), 3) + 1):
+            self.create_batch_field(f'dsc_3_option_{i}', dsc3_filtered, f'Option {i}')
 
-        # MDC (dynamic options - show all available)
-        self.create_dynamic_options('mdc', mdc_filtered, 'MDC', max_options=None)
-
-    def create_dynamic_options(self, prefix, batches, label, max_options=None, required_default=False):
-        """Helper method to create dynamic option fields"""
-        if not batches.exists():
-            return
-            
-        # Determine how many options to show
-        num_courses = batches.count()
-        num_options = min(num_courses, max_options) if max_options else num_courses
-        
-        # If there's only one course, make it required
-        is_required = required_default or num_courses == 1
-        
-        # Create fields for each option
-        for i in range(1, num_options + 1):
-            self.create_batch_field(
-                f'{prefix}_option_{i}', 
-                batches, 
-                f'{label} Option {i}',
-                required=is_required
-            )
+        # MDC options - create fields for all available batches
+        for i in range(1, mdc_filtered.count() + 1):
+            self.create_batch_field(f'mdc_option_{i}', mdc_filtered, f'MDC Option {i}')
 
     def get_field_order(self):
         field_order = ['dsc_1']
         
-        # Add dynamic fields in order
-        for prefix in ['dsc_2', 'dsc_3', 'mdc']:
-            field_order += sorted(
-                [f for f in self.fields if f.startswith(f'{prefix}_option_')],
-                key=lambda x: int(x.split('_')[-1])
-            )
+        # Add DSC2 options
+        field_order += sorted(
+            [f for f in self.fields if f.startswith('dsc_2_option_')],
+            key=lambda x: int(x.split('_')[-1]))
+        
+        # Add DSC3 options
+        field_order += sorted(
+            [f for f in self.fields if f.startswith('dsc_3_option_')],
+            key=lambda x: int(x.split('_')[-1]))
+        
+        # Add MDC options
+        field_order += sorted(
+            [f for f in self.fields if f.startswith('mdc_option_')],
+            key=lambda x: int(x.split('_')[-1]))
         
         return field_order
 
@@ -195,27 +189,11 @@ class CourseSelectionFormSem2(BaseCourseSelectionForm):
         sem1_allotments = CourseAllotment.objects.filter(
             student=self.student, 
             batch__course__semester=1
-        ).select_related('batch__course__department')
+        )
+        paper_3_dept = sem1_allotments.filter(paper_no=3).first().batch.course.department if sem1_allotments.filter(paper_no=3).exists() else None
+        paper_1_dept = sem1_allotments.filter(paper_no=1).first().batch.course.department if sem1_allotments.filter(paper_no=1).exists() else None
 
-        # Get department of DSC1 (Paper 1) from Semester 1
-        paper_1_dept = sem1_allotments.filter(
-            paper_no=1,
-            batch__course__course_type__name='DSC1'
-        ).first().batch.course.department if sem1_allotments.filter(
-            paper_no=1,
-            batch__course__course_type__name='DSC1'
-        ).exists() else None
-
-        # Get department of DSC2 (Paper 3) from Semester 1
-        paper_3_dept = sem1_allotments.filter(
-            paper_no=3,
-            batch__course__course_type__name='DSC2'
-        ).first().batch.course.department if sem1_allotments.filter(
-            paper_no=3,
-            batch__course__course_type__name='DSC2'
-        ).exists() else None
-
-        # Fetch Semester 2 batches
+        # Fetch Semester 2 batches with exact course type matching
         dsc1_batches = Batch.objects.select_related('course', 'course__department').filter(
             course__course_type__name='DSC1',
             course__semester=2
@@ -235,17 +213,10 @@ class CourseSelectionFormSem2(BaseCourseSelectionForm):
 
         # Pathway-specific filtering
         if self.student.pathway.name == "Double Major":
-            # For Double Major:
-            # DSC1 in sem2 comes from DSC2 department in sem1 (paper 3)
-            # DSC2 in sem2 comes from same department as DSC2 in sem1 (paper 3)
-            # DSC3 in sem2 comes from DSC1 department in sem1 (paper 1)
-            dsc1_filtered = dsc1_batches.filter(course__department=paper_3_dept) if paper_3_dept else Batch.objects.none()
-            dsc2_filtered = dsc2_batches.filter(course__department=paper_3_dept) if paper_3_dept else Batch.objects.none()
-            dsc3_filtered = dsc3_batches.filter(course__department=paper_1_dept) if paper_1_dept else Batch.objects.none()
+            dsc1_filtered = dsc1_batches.filter(course__department=paper_3_dept)
+            dsc2_filtered = dsc2_batches.filter(course__department=paper_3_dept)
+            dsc3_filtered = dsc3_batches.filter(course__department=paper_1_dept)
         else:
-            # For other pathways:
-            # DSC1 in sem2 comes from student's own department
-            # DSC2 and DSC3 come from other departments
             dsc1_filtered = dsc1_batches.filter(course__department=self.student.department)
             dsc2_filtered = dsc2_batches.exclude(course__department=self.student.department)
             dsc3_filtered = dsc3_batches.exclude(course__department=self.student.department)
@@ -255,40 +226,35 @@ class CourseSelectionFormSem2(BaseCourseSelectionForm):
         # DSC1 (always required, single option)
         self.create_batch_field('dsc_1', dsc1_filtered, 'DSC 1', required=True)
         
-        # DSC2 (dynamic options)
-        self.create_dynamic_options('dsc_2', dsc2_filtered, 'DSC 2', max_options=3)
+        # DSC2 options - create fields for all available batches
+        for i in range(1, dsc2_filtered.count() + 1):
+            self.create_batch_field(f'dsc_2_option_{i}', dsc2_filtered, f'DSC 2 Option {i}')
         
-        # DSC3 (dynamic options)
-        self.create_dynamic_options('dsc_3', dsc3_filtered, 'DSC 3', max_options=3)
+        # DSC3 options - create fields for all available batches (up to 3)
+        for i in range(1, min(dsc3_filtered.count(), 3) + 1):
+            self.create_batch_field(f'dsc_3_option_{i}', dsc3_filtered, f'DSC 3 Option {i}')
 
-        # MDC (dynamic options)
-        self.create_dynamic_options('mdc', mdc_filtered, 'MDC', max_options=None)
-
-    def create_dynamic_options(self, prefix, batches, label, max_options=None, required_default=False):
-        """Helper method to create dynamic option fields"""
-        if not batches.exists():
-            return
-            
-        num_courses = batches.count()
-        num_options = min(num_courses, max_options) if max_options else num_courses
-        is_required = required_default or num_courses == 1
-        
-        for i in range(1, num_options + 1):
-            self.create_batch_field(
-                f'{prefix}_option_{i}', 
-                batches, 
-                f'{label} Option {i}',
-                required=is_required
-            )
+        # MDC options - create fields for all available batches
+        for i in range(1, mdc_filtered.count() + 1):
+            self.create_batch_field(f'mdc_option_{i}', mdc_filtered, f'MDC Option {i}')
 
     def get_field_order(self):
         field_order = ['dsc_1']
         
-        for prefix in ['dsc_2', 'dsc_3', 'mdc']:
-            field_order += sorted(
-                [f for f in self.fields if f.startswith(f'{prefix}_option_')],
-                key=lambda x: int(x.split('_')[-1])
-            )
+        # Add DSC2 options
+        field_order += sorted(
+            [f for f in self.fields if f.startswith('dsc_2_option_')],
+            key=lambda x: int(x.split('_')[-1]))
+        
+        # Add DSC3 options
+        field_order += sorted(
+            [f for f in self.fields if f.startswith('dsc_3_option_')],
+            key=lambda x: int(x.split('_')[-1]))
+        
+        # Add MDC options
+        field_order += sorted(
+            [f for f in self.fields if f.startswith('mdc_option_')],
+            key=lambda x: int(x.split('_')[-1]))
         
         return field_order
     
