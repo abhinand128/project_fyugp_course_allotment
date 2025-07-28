@@ -61,7 +61,7 @@ class Student(models.Model):
     normalized_marks = models.IntegerField(
         validators=[
             MinValueValidator(0),
-            MaxValueValidator(1000)
+            MaxValueValidator(2000)
         ]
     )
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -70,7 +70,7 @@ class Student(models.Model):
         blank=True,
         validators=[
             MinValueValidator(0),
-            MaxValueValidator(1000)
+            MaxValueValidator(2000)
         ]
     )
     status = models.IntegerField(choices=[(0, 'Inactive'), (1, 'Active')], default=1)

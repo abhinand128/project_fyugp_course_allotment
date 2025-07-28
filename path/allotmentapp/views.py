@@ -1480,7 +1480,7 @@ def bulk_student_upload(request):
                             normalized_marks = row.get("PlusTwo Marks(normalized)", "0").strip()
                             try:
                                 normalized_marks = int(normalized_marks)
-                                if not (0 <= normalized_marks <= 100):
+                                if not (0 <= normalized_marks <= 2000):
                                     raise ValidationError("Normalized marks must be between 0 and 100")
                             except ValueError:
                                 raise ValidationError("Normalized marks must be a number")
