@@ -1,0 +1,354 @@
+[
+    {
+        "course_code": "KU2DSCPLS102",
+        "course_name": "Angiosperm Anatomy, Embryology and Palynology",
+        "course_type": "DSC1",
+        "department": "Botany",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCBOT106",
+        "course_name": "Angiosperm Taxonomy and Morphology",
+        "course_type": "DSC2",
+        "department": "Botany",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCHE101",
+        "course_name": "Fundamentals of Chemistry - II",
+        "course_type": "DSC1",
+        "department": "Chemistry",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCHE111",
+        "course_name": "Basic Physical Chemistry and Forensic Chemistry",
+        "course_type": "DSC2",
+        "department": "Chemistry",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCHE114",
+        "course_name": "Foundations in Physical and Organic Chemistry",
+        "course_type": "DSC3",
+        "department": "Chemistry",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCHE115",
+        "course_name": "Foundation in Physical, Organic & Bioinorganic Chemistry",
+        "course_type": "DSC4",
+        "department": "Chemistry",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCOM105",
+        "course_name": "Financial Accounting",
+        "course_type": "DSC1",
+        "department": "Commerce",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCOM107",
+        "course_name": "Fundamentals of Income Tax",
+        "course_type": "DSC2",
+        "department": "Commerce",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCOM108",
+        "course_name": "Business Economics",
+        "course_type": "DSC3",
+        "department": "Commerce",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2MDCCOM102",
+        "course_name": "Fundamentals of Entrepreneurship",
+        "course_type": "MDC1",
+        "department": "Commerce",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCSC112",
+        "course_name": "Basics of Data Analytics",
+        "course_type": "DSC1",
+        "department": "Computer Science",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCCCSC109",
+        "course_name": "Data Management Platform",
+        "course_type": "DSC2",
+        "department": "Computer Science",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCECO106",
+        "course_name": "Introductory Macroeconomics",
+        "course_type": "DSC1",
+        "department": "Economics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCECO107",
+        "course_name": "Foundations for Economic Analysis",
+        "course_type": "DSC2",
+        "department": "Economics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCECO108",
+        "course_name": "Demography",
+        "course_type": "DSC3",
+        "department": "Economics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2MDCECO103",
+        "course_name": "Issues in Indian Economic Development",
+        "course_type": "MDC1",
+        "department": "Economics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2MDCENG105",
+        "course_name": "Food and Fashion Narratives",
+        "course_type": "MDC1",
+        "department": "English",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2MDCENG106",
+        "course_name": "Popular Narratives",
+        "course_type": "MDC2",
+        "department": "English",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2MDCHIN102",
+        "course_name": "Anudit Malayalam Sahitya",
+        "course_type": "MDC1",
+        "department": "Hindi",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCHIS107",
+        "course_name": "An Introduction To World Civilizations",
+        "course_type": "DSC1",
+        "department": "History",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCHIS109",
+        "course_name": "Understanding Contemporary World History",
+        "course_type": "DSC2",
+        "department": "History",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCHIS108",
+        "course_name": "Economic History of Modern India (1858 to 1947)",
+        "course_type": "DSC3",
+        "department": "History",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2MDCHIS106",
+        "course_name": "Indian National Movement",
+        "course_type": "MDC1",
+        "department": "History",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCMAL105",
+        "course_name": "കവിതയും കവിത വായനയും",
+        "course_type": "DSC1",
+        "department": "Malayalam",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCMAL106",
+        "course_name": "ഇന്ത്യൻ സാഹിത്യ പരിചയം",
+        "course_type": "DSC2",
+        "department": "Malayalam",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCMAL108",
+        "course_name": "പ്രവാസവും സാഹിത്യവും",
+        "course_type": "DSC3",
+        "department": "Malayalam",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU1MDCMAL102",
+        "course_name": "ചലച്ചിത്രാസ്വാദനം",
+        "course_type": "DSC1",
+        "department": "Malayalam",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCMAT101",
+        "course_name": "Calculus II",
+        "course_type": "DSC1",
+        "department": "Mathematics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCMAT112",
+        "course_name": "Differential Calculus, Curve Fitting And Coordinate Systems",
+        "course_type": "DSC2",
+        "department": "Mathematics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCMAT116",
+        "course_name": "Multivariable Calculus",
+        "course_type": "DSC3",
+        "department": "Mathematics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCMAT117",
+        "course_name": "Calculus and Matrix Algebra-II",
+        "course_type": "DSC4",
+        "department": "Mathematics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCPHY102",
+        "course_name": "Physics of Solids and Fluids",
+        "course_type": "DSC1",
+        "department": "Physics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCPHY125",
+        "course_name": "Digital Electronics",
+        "course_type": "DSC2",
+        "department": "Physics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCSTA102",
+        "course_name": "Descriptive Statistics",
+        "course_type": "DSC1",
+        "department": "Statistics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCSTA132",
+        "course_name": "Probability Theory and Bivariate Data Analysis",
+        "course_type": "DSC2",
+        "department": "Statistics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCSTA133",
+        "course_name": "Time Series and Index Numbers",
+        "course_type": "DSC3",
+        "department": "Statistics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCSTA134",
+        "course_name": "Quantitative Techniques in Data Analysis - I",
+        "course_type": "DSC4",
+        "department": "Statistics",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCZOO105",
+        "course_name": "Fundamentals Of Animal Biology",
+        "course_type": "DSC1",
+        "department": "Zoology",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCZOO106",
+        "course_name": "Basics of Evolutionary Biology",
+        "course_type": "DSC2",
+        "department": "Zoology",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCZOO108",
+        "course_name": "Cell Biology and Immunology",
+        "course_type": "DSC3",
+        "department": "Zoology",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCPOL106",
+        "course_name": "Ideas and Concept in Political Science",
+        "course_type": "DSC1",
+        "department": "Political Science",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCPOL105",
+        "course_name": "Indian Constitution-institution and Processes",
+        "course_type": "DSC2",
+        "department": "Political Science",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2DSCSAN106",
+        "course_name": "Karnabhara- Relevance and Impact on Modern Theatre",
+        "course_type": "DSC1",
+        "department": "Sanskrit",
+        "semester": 2,
+        "seat_limit": 70
+    },
+    {
+        "course_code": "KU2MDCSAN104",
+        "course_name": "Herbal Literacy and Ethno-Botanical Awareness",
+        "course_type": "MDC1",
+        "department": "Sanskrit",
+        "semester": 2,
+        "seat_limit": 70
+    }
+]

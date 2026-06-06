@@ -1,0 +1,195 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="container-fluid allocation-container">
+    <div class="card shadow form-card">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Edit {{ setting.department }} Settings</h6>
+        </div>
+        <div class="card-body">
+            <!-- Display form errors at the top -->
+            {% if form.errors %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <strong>Error!</strong> Please correct the following:
+                <ul class="mb-0">
+                    {% for field, errors in form.errors.items %}
+                        {% for error in errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+
+            <form method="post" class="allocation-form" id="allocationForm">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>{{ form.department.label }}</label>
+                            {{ form.department }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>{{ form.strength.label }}</label>
+                            {{ form.strength }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>{{ form.department_quota_percentage.label }}</label>
+                            {{ form.department_quota_percentage }}
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>{{ form.general_quota_percentage.label }}</label>
+                            {{ form.general_quota_percentage }}
+                            <div class="invalid-feedback" id="generalError"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>{{ form.sc_st_quota_percentage.label }}</label>
+                            {{ form.sc_st_quota_percentage }}
+                            <div class="invalid-feedback" id="scstError"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label>{{ form.other_quota_percentage.label }}</label>
+                            {{ form.other_quota_percentage }}
+                            <div class="invalid-feedback" id="otherError"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary mr-2">Save Changes</button>
+                    <a href="{% url 'allocation_settings' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.allocation-container {
+    padding: 20px;
+    background-color: #f8f9fc;
+}
+
+.form-card {
+    max-width: 800px;
+    margin: 0 auto;
+    border-radius: 10px;
+    border: 1px solid #e3e6f0;
+}
+
+.allocation-form {
+    padding: 20px;
+}
+
+.allocation-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.allocation-form label {
+    font-weight: 600;
+    color: #4e73df;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.allocation-form .form-control {
+    border-radius: 5px;
+    border: 1px solid #d1d3e2;
+    padding: 0.375rem 0.75rem;
+    height: calc(1.5em + 0.75rem + 2px);
+}
+
+.allocation-form .btn {
+    padding: 0.375rem 1.5rem;
+    font-weight: 600;
+}
+
+.allocation-form .btn-primary {
+    background-color: #4e73df;
+    border-color: #4e73df;
+}
+
+/* Error styling */
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875em;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('allocationForm');
+    const generalInput = document.getElementById('id_general_quota_percentage');
+    const scstInput = document.getElementById('id_sc_st_quota_percentage');
+    const otherInput = document.getElementById('id_other_quota_percentage');
+    
+    function validatePercentages() {
+        let isValid = true;
+        const general = parseInt(generalInput.value) || 0;
+        const scst = parseInt(scstInput.value) || 0;
+        const other = parseInt(otherInput.value) || 0;
+        const total = general + scst + other;
+        
+        // Reset previous states
+        [generalInput, scstInput, otherInput].forEach(input => {
+            input.classList.remove('is-invalid');
+        });
+        document.querySelectorAll('.invalid-feedback').forEach(el => {
+            el.textContent = '';
+        });
+        
+        if (total !== 100) {
+            isValid = false;
+            const errorMsg = 'Percentages must sum to 100% (Current total: ' + total + '%)';
+            
+            [generalInput, scstInput, otherInput].forEach(input => {
+                input.classList.add('is-invalid');
+            });
+            
+            document.getElementById('generalError').textContent = errorMsg;
+            document.getElementById('scstError').textContent = errorMsg;
+            document.getElementById('otherError').textContent = errorMsg;
+        }
+        
+        return isValid;
+    }
+    
+    form.addEventListener('submit', function(e) {
+        if (!validatePercentages()) {
+            e.preventDefault();
+        }
+    });
+    
+    // Live validation as user types
+    [generalInput, scstInput, otherInput].forEach(input => {
+        input.addEventListener('input', validatePercentages);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'student_base.html' %}
+{% load custom_filters %}
+
+{% block title %}Allotment Result{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Allotment Result</h1>
+    <div>
+        <span class="me-1 text-muted">Semester {{ student.current_sem }} | </span>
+        <a href="{% url 'student_dashboard' %}">
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+
+<div class="container-fluid p-3">
+    <div class="card shadow-sm border-0 rounded-3 p-3">
+        <h2 class="text-center mb-4 fw-bold">Current Allotment (Semester {{ student.current_sem }})</h2>
+
+        {% if allotment_published %}
+            {% if allotments %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th>Paper</th>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Department</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for allotment in allotments %}
+                            <tr>
+                                <td class="text-center">
+                                    {{ allotment.paper_no|get_paper_display_name:allotment.batch.course.semester }}
+                                </td>
+                                <td class="text-center">{{ allotment.batch.course.course_code }}</td>
+                                <td>{{ allotment.batch.course.course_name }}</td>
+                                <td>{{ allotment.batch.course.department.name }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center py-4">
+                    <h4 class="alert-heading">No Allotment Found</h4>
+                    <p>You have not been allotted any courses for Semester {{ student.current_sem }}.</p>
+                    <hr>
+                    <p class="mb-0 text-muted">Please contact the administration if you believe this is an error.</p>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="alert alert-warning text-center">
+                <p class="mb-0">🚨 Allotment not published yet for Semester {{ student.current_sem }}.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

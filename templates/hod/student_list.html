@@ -1,0 +1,172 @@
+{% extends 'HOD_base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-0.1 ">
+    <h1 class="mb-0"></h1>
+
+    <!-- Current Page & Home Link -->
+    <div>
+        <span class="me-1 text-muted"> </span>
+        <a href="{% url 'hod_dashboard' %}" >
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+<div class="container-fluid p-0">
+    <div class="card shadow-sm border-1 rounded-3 p-2">
+        <h2 class="mb-3 text-center">Students of {{ request.user.hod.department }}</h2>
+
+        <!-- Display Django Messages -->
+        {% if messages %}
+        
+            {% for message in messages %}
+            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+
+        {% endif %}
+
+        <!-- Search Bar -->
+        <div class="input-group mb-3">
+            <input type="text" id="searchBox" class="form-control" placeholder="Search by Name or Admission Number..." onkeyup="searchTable()">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
+
+        {% if students %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover" id="studentTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Sl/No</th>
+                        <th>Admission Number</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Category</th>
+                        <th>Pathway</th>
+                        <th>Semester</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr id="studentRow-{{ student.id }}">
+                        <td class="sl-no"></td>
+                        <td>{{ student.admission_number }}</td>
+                        <td>
+                            <a href="{% url 'hod_student_detail' student.id %}" class="fw-bold text-primary text-decoration-none">
+                                {{ student.name }}
+                            </a>
+                        </td>
+                        <td>{{ student.phone_number }}</td> <!-- Added Phone Number -->
+                        <td>{{ student.get_admission_category_display }}</td> <!-- Added Category -->
+                        <td>{{ student.pathway }}</td>
+                        <td>{{ student.current_sem }}</td>
+                        <td>
+                            {% if student.status == 1 %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td> <!-- Added Status -->
+                        <td class="text-center">
+                            <a href="{% url 'hod_student_edit' student.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger" title="Delete" onclick="deleteStudent({{ student.id }}, '{{ student.name }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td> <!-- Actions with Icons -->
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-center fw-bold text-danger">No students found in this department.</p>
+        {% endif %}
+    </div>
+</div>
+<style>
+    table{
+        padding: auto;;
+    }
+    th {
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
+        padding: 8px 16px;
+    }
+    td {
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
+        padding: 5px 16px;
+    }
+</style>
+
+<!-- JavaScript for Search Functionality & Delete Confirmation -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        updateSlNo();
+    });
+
+    function updateSlNo() {
+        let table = document.getElementById("studentTable");
+        if (!table) return;
+        let rows = table.getElementsByTagName("tr");
+        let counter = 1;
+
+        for (let i = 1; i < rows.length; i++) {
+            if (rows[i].style.display !== "none") {
+                let slCell = rows[i].getElementsByClassName("sl-no")[0];
+                if (slCell) {
+                    slCell.innerText = counter++;
+                }
+            }
+        }
+    }
+
+    function searchTable() {
+        let input = document.getElementById("searchBox").value.toUpperCase();
+        let table = document.getElementById("studentTable");
+        let rows = table.getElementsByTagName("tr");
+
+        for (let i = 1; i < rows.length; i++) {
+            let cells = rows[i].getElementsByTagName("td");
+            if (cells.length < 3) continue;
+            let admissionNumber = cells[1].innerText.toUpperCase();
+            let studentName = cells[2].innerText.toUpperCase();
+            
+            rows[i].style.display = (admissionNumber.includes(input) || studentName.includes(input)) ? "" : "none";
+        }
+        updateSlNo();
+    }
+
+    function deleteStudent(studentId, studentName) {
+        if (confirm(`Are you sure you want to delete ${studentName}? This action cannot be undone.`)) {
+            fetch(`/hod/students/delete/${studentId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`studentRow-${studentId}`).remove();
+                    alert("Student deleted successfully!");
+                } else {
+                    alert("Error: " + data.error);
+                }
+            })
+            .catch(error => {
+                alert("Something went wrong!");
+            });
+        }
+    }
+</script>
+{% endblock %}
+

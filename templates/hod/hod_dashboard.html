@@ -1,0 +1,95 @@
+{% extends 'HOD_base.html' %}
+
+{% block title %}Hod Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="mb-0"></h6>
+    <div>
+        <span class="me-1 text-muted">Welcome back, {{ hod }}!</span>
+        
+    </div>
+</div>
+<h2 class="text-center fw-bold mb-2"> Dashboard</h2>
+<div class="cards-container">
+    <div class="card" onclick="window.location.href='{% url 'hod_student_list' %}'">
+        <div class="icon-box"><i class="fas fa-user-graduate"></i></div>
+        <h3>Manage Students</h3>
+        <p>View and manage student profiles and academic details.</p>
+    </div>
+    <div class="card" onclick="window.location.href='{% url 'hod_reset_password' %}'">
+        <div class="icon-box"><i class="fas fa-key icon reset-icon"></i></div>
+        <h3>Reset Password</h3>
+        <p>Reset and update your  password securely.</p>
+    </div>
+    <div class="card" onclick="window.location.href='{% url 'logout' %}'">
+        <div class="icon-box"><i class="fas fa-power-off"></i></div>
+        <h3>Logout</h3>
+        <p>logout securely.</p>
+       
+    </div>
+
+</div>
+
+<style>
+    /* Cards Container */
+    .cards-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        padding: 20px;
+    }
+
+    .card {
+        background: #ffffff;
+        border-radius: 15px;
+        padding: 30px;  /* Increased padding */
+        width: 280px;   /* Slightly wider for better spacing */
+        text-align: center;
+        cursor: pointer;
+        border: 3px solid #e0e0e0; /* Thicker border */
+        box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease-in-out;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        border-color: #333; /* Darker border on hover */
+        box-shadow: 5px 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Icon Styling */
+    .icon-box {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 15px;
+        border-radius: 50%;
+        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #ddd; /* Added a border around the icon */
+    }
+
+    .icon-box i {
+        font-size: 24px;
+        color: #333;
+    }
+
+    /* Typography */
+    .card h3 {
+        font-size: 18px;
+        font-weight: 700;  /* Made text bolder */
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .card p {
+        font-size: 14px;
+        color: #666;
+    }
+</style>
+
+
+{% endblock %}

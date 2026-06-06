@@ -1,0 +1,293 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-0.1">
+    <h1 class="mb-0"></h1>
+
+    <!-- Current Page & Home Link -->
+    <div>
+        <span class="me-3 text-muted">Manage Students | </span>
+        <a href="{% url 'admin_dashboard' %}">
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+
+<div class="container-fluid p-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="fw-bold">Student List</h2>
+        <div>
+            <a href="{% url 'promote_students' %}" class="btn btn-primary me-2">
+                <i class="fas fa-arrow-up"></i> Promote Students
+            </a>
+            <a href="{% url 'student_register' %}" class="btn btn-success">
+                <i class="fas fa-user-plus"></i> Add Student
+            </a>
+        </div>
+    </div>
+
+    <!-- Django Messages -->
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Search and Filters -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="input-group w-50 me-2">
+            <input type="text" id="searchBox" class="form-control" placeholder="Search by Name, Admission Number.." onkeyup="filterTable()">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+        </div>
+
+        <div class="d-flex">
+            <select class="form-select me-2" id="departmentFilter" onchange="filterTable()">
+                <option value="">All Departments</option>
+                <!-- Departments will be added by JavaScript -->
+            </select>
+
+            <select class="form-select me-2" id="pathwayFilter" onchange="filterTable()">
+                <option value="">All Pathways</option>
+                <!-- Pathways will be added by JavaScript -->
+            </select>
+
+            <select class="form-select me-2" id="semesterFilter" onchange="filterTable()">
+                <option value="">All Semesters</option>
+                <!-- Semesters will be added by JavaScript -->
+            </select>
+
+            
+        </div>
+    </div>
+
+    <div class="">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mt-2" id="studentTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Sl/No</th>
+                        <th>Admission Number</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                        <th>Pathway</th>
+                        <th>Semester</th>
+                        <th>Phone Number</th>
+                        <th>Status</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td class="sl-no"></td>
+                        <td>{{ student.admission_number }}</td>
+                        <td>
+                            <a href="{% url 'student_detail' student.id %}" class="text-decoration-none fw-bold">
+                                {{ student.name }}
+                            </a>
+                        </td>
+                        <td>{{ student.department }}</td>
+                        <td>{{ student.pathway }}</td>
+                        <td>{{ student.current_sem }}</td>
+                        <td>{{ student.phone_number }}</td>
+                        <td>
+                            {% if student.status == 1 %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'student_edit' student.id %}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'student_delete' student.id %}" 
+                               class="btn btn-sm btn-danger"
+                               onclick="return confirm('Are you sure you want to delete {{ student.name }}?');">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                            
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center">No students available.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    table{
+        padding: auto;;
+    }
+    th {
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
+        padding: 12px 16px;
+    }
+    td {
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
+        padding: 5px 16px;
+    }
+</style>
+
+<!-- JavaScript for Search and Filters -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    populateDepartmentFilter();
+    populatePathwayFilter();
+    populateSemesterFilter();
+    updateSlNo();
+});
+
+function updateSlNo() {
+    let table = document.getElementById("studentTable");
+    let rows = table.getElementsByTagName("tr");
+    let counter = 1;
+
+    for (let i = 1; i < rows.length; i++) {
+        if (rows[i].style.display !== "none" && rows[i].getElementsByTagName("td").length > 1) {
+            rows[i].getElementsByClassName("sl-no")[0].innerText = counter++;
+        }
+    }
+}
+
+function populateDepartmentFilter() {
+    let table = document.getElementById("studentTable");
+    let departmentSet = new Set();
+
+    let rows = table.getElementsByTagName("tr");
+    for (let i = 1; i < rows.length; i++) {
+        let department = rows[i].getElementsByTagName("td")[3];
+        if (department) {
+            let deptText = department.innerText.trim();
+            if (deptText !== "") {
+                departmentSet.add(deptText);
+            }
+        }
+    }
+
+    let departmentFilter = document.getElementById("departmentFilter");
+    departmentSet = Array.from(departmentSet).sort();
+
+    departmentSet.forEach(dept => {
+        let option = document.createElement("option");
+        option.value = dept;
+        option.textContent = dept;
+        departmentFilter.appendChild(option);
+    });
+}
+
+function populatePathwayFilter() {
+    let table = document.getElementById("studentTable");
+    let pathwaySet = new Set();
+
+    let rows = table.getElementsByTagName("tr");
+    for (let i = 1; i < rows.length; i++) {
+        let pathway = rows[i].getElementsByTagName("td")[4]; 
+        if (pathway) {
+            let pathwayText = pathway.innerText.trim();
+            if (pathwayText !== "") {
+                pathwaySet.add(pathwayText);
+            }
+        }
+    }
+
+    let pathwayFilter = document.getElementById("pathwayFilter");
+    pathwaySet = Array.from(pathwaySet).sort();
+
+    pathwaySet.forEach(path => {
+        let option = document.createElement("option");
+        option.value = path;
+        option.textContent = path;
+        pathwayFilter.appendChild(option);
+    });
+}
+
+function populateSemesterFilter() {
+    let table = document.getElementById("studentTable");
+    let semesterSet = new Set();
+
+    let rows = table.getElementsByTagName("tr");
+    for (let i = 1; i < rows.length; i++) {
+        let semester = rows[i].getElementsByTagName("td")[5]; 
+        if (semester) {
+            let semText = semester.innerText.trim();
+            if (semText !== "") {
+                semesterSet.add(semText);
+            }
+        }
+    }
+
+    let semesterFilter = document.getElementById("semesterFilter");
+    semesterSet = Array.from(semesterSet).sort((a, b) => a - b);
+
+    semesterSet.forEach(sem => {
+        let option = document.createElement("option");
+        option.value = sem;
+        option.textContent = "Semester " + sem;
+        semesterFilter.appendChild(option);
+    });
+}
+
+function filterTable() {
+    let input = document.getElementById("searchBox").value.toUpperCase();
+    let departmentFilter = document.getElementById("departmentFilter").value;
+    let pathwayFilter = document.getElementById("pathwayFilter").value;
+    let semesterFilter = document.getElementById("semesterFilter").value;
+    let table = document.getElementById("studentTable");
+    let rows = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < rows.length; i++) {
+        let row = rows[i];
+        if (!row.getElementsByTagName("td").length || row.getElementsByTagName("td").length <= 1) continue; 
+        
+        let admissionNumber = row.getElementsByTagName("td")[1];
+        let name = row.getElementsByTagName("td")[2];
+        let department = row.getElementsByTagName("td")[3];
+        let pathway = row.getElementsByTagName("td")[4];
+        let semester = row.getElementsByTagName("td")[5];
+        let status = row.getElementsByTagName("td")[7]; 
+        
+        if (admissionNumber && name && department && pathway && semester && status) {
+            let admissionText = admissionNumber.innerText.toUpperCase();
+            let nameText = name.innerText.toUpperCase();
+            let departmentText = department.innerText;
+            let pathwayText = pathway.innerText;
+            let semesterText = semester.innerText;
+            
+            let searchMatch = input === "" || 
+                              admissionText.includes(input) || 
+                              nameText.includes(input);
+                              
+            let departmentMatch = departmentFilter === "" || 
+                                 departmentText === departmentFilter;
+                                 
+            let pathwayMatch = pathwayFilter === "" || 
+                              pathwayText === pathwayFilter;
+
+            let semesterMatch = semesterFilter === "" || 
+                               semesterText === semesterFilter;
+
+            if (searchMatch && departmentMatch && pathwayMatch && semesterMatch) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        }
+    }
+    updateSlNo();
+}
+</script>
+{% endblock %}
+

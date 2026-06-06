@@ -1,0 +1,44 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <h2 class="mb-4">Course Change History</h2>
+    
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Student</th>
+                            <th>Changed By</th>
+                            <th>Paper</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for change in changes %}
+                        <tr>
+                            <td>{{ change.changed_at|date:"d M Y H:i" }}</td>
+                            <td>{{ change.student.name }}</td>
+                            <td>{{ change.changed_by.get_full_name }}</td>
+                            <td>Paper {{ change.original_allotment.paper_no }}</td>
+                            <td>{{ change.original_allotment.batch.course.course_name }}</td>
+                            <td>{{ change.new_allotment.batch.course.course_name }}</td>
+                            <td>{{ change.reason|truncatechars:30 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No change history found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

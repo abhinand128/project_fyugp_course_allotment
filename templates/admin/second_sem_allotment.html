@@ -1,0 +1,325 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}second Semester Allotment{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-0.1">
+    <h1 class="mb-0"></h1>
+
+    <!-- Current Page & Home Link -->
+    <div>
+        <span class="me-3 text-muted">Second Semester Allotment | </span>
+        <a href="{% url 'admin_dashboard' %}" >
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+<div class="container-fluid py-4">
+    <!-- Main Allocation Card -->
+    <div class="card shadow-lg mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0">Student Preferences for second Semester</h3>
+            <div>
+                <a href="{% url 'download_preferences_csv_second_sem' %}" class="btn btn-success me-2">
+                    <i class="fas fa-download"></i> Download CSV
+                </a>
+                <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#statsModal">
+                    <i class="fas fa-chart-pie"></i> View Stats
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info d-flex align-items-center">
+                <i class="fas fa-info-circle me-2"></i>
+                <div>
+                    <strong>Total Students:</strong> {{ total_students }} | 
+                    <strong>Number of students who submitted Preferences:</strong> {{ students_with_preferences }} | 
+                    <strong>Number of students who did not submitted Preferences:</strong> {{ students_without_preferences }}
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered table-hover">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th class="align-middle">Admission No.</th>
+                            <th class="align-middle">Name</th>
+                            <th class="align-middle">Department</th>
+                            <th class="align-middle">Pathway</th>
+                            <th class="align-middle">Category</th>
+                            <th class="align-middle">Normalized Marks</th>
+                            {% for paper_no, preferences in paper_options.items %}
+                                {% for pref_no in preferences %}
+                                    <th class="align-middle text-center">
+                                        Paper {{ paper_no }}<br>Option {{ pref_no }}
+                                    </th>
+                                {% endfor %}
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                            <tr class="{% if not student.has_preferences %}table-warning{% endif %}">
+                                <td>{{ student.admission_number }}</td>
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.department.name }}</td>
+                                <td>{{ student.pathway }}</td>
+                                <td>{{ student.admission_category }}</td>
+                                <td class="text-center">{{ student.normalized_marks }}</td>
+                                {% for paper_no, preferences in paper_options.items %}
+                                    {% for pref_no in preferences %}
+                                        <td class="text-center">
+                                            {% get_specific_preference student.coursepreference_set.all paper_no pref_no %}
+                                        </td>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <form method="post" id="allotmentForm" class="mt-4">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary" id="allocateBtn" {% if total_students == 0 or students_without_preferences > 0 %}disabled{% endif %}>
+                    <i class="fas fa-check-circle"></i> Allocate Courses
+                </button>
+                {% if total_students == 0 %}
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No students found for allotment in the current cohort.
+                </div>
+                {% elif students_without_preferences > 0 %}
+                <div class="alert alert-danger mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning:</strong> {{ students_without_preferences }} student(s) haven't submitted preferences. 
+                    Allocation cannot proceed until all students have submitted preferences.
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Students Without Preferences Card -->
+    {% if students_without_preferences > 0 %}
+    <div class="card shadow-lg border-danger">
+        <div class="card-header bg-danger text-white">
+            <h3 class="card-title mb-0">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Students Without Preferences ({{ students_without_preferences }})
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered table-hover">
+                    <thead>
+                        <tr class="table-danger">
+                            <th>Admission No.</th>
+                            <th>Name</th>
+                            <th>Department</th>
+                            <th>Pathway</th>
+                            <th>Category</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                        
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students_missing_preferences %}
+                        <tr>
+                            <td>{{ student.admission_number }}</td>
+                            <td>{{ student.name }}</td>
+                            <td>{{ student.department.name }}</td>
+                            <td>{{ student.pathway }}</td>
+                            <td>{{ student.admission_category }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>{{ student.phone_number }}</td>
+                            
+                                
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Stats Modal -->
+<div class="modal fade" id="statsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="align-content: center;">
+                <center><h5 class="modal-title">Preferences Submission Statistics</h5></center>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6>Department-wise </h6>
+                            </div>
+                            <div class="card-body" style="align-content: center;">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Department</th>
+                                            <th>Students</th>
+                                            <th>Complete</th>
+                                            <th>Pending</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for dept in department_stats %}
+                                        <tr>
+                                            <td>{{ dept.name }}</td>
+                                            <td>{{ dept.total }}</td>
+                                            <td class="text-success">{{ dept.complete }}</td>
+                                            <td class="text-danger">{{ dept.pending }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="sr-only">Loading...</span>
+                </div>
+                <h5>Processing Allocation...</h5>
+                <p class="text-muted mb-0">Please wait while we allocate courses.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="text-success mb-3">
+                    <i class="fas fa-check-circle fa-3x"></i>
+                </div>
+                <h5>Allocation Successful!</h5>
+                <p class="text-muted mb-3">Course allocation has been completed successfully.</p>
+                <p>Redirecting to allotment results...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+.table-sm td, .table-sm th {
+    padding: 0.5rem;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+.table td {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.align-middle {
+    vertical-align: middle;
+}
+
+.table-warning td {
+    background-color: rgba(255, 193, 7, 0.1);
+}
+
+.table-danger th {
+    background-color: #dc3545;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('allotmentForm');
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        {% if students_without_preferences > 0 %}
+            alert("Cannot proceed with allocation. {{ students_without_preferences }} student(s) haven't submitted preferences.");
+            return;
+        {% endif %}
+
+        loadingModal.show();
+        
+        // Submit form after showing loading modal
+        setTimeout(function() {
+            form.submit();
+        }, 100);
+    });
+
+    {% if messages %}
+        {% for message in messages %}
+            if ("{{ message.tags }}" === "success") {
+                successModal.show();
+                setTimeout(function() {
+                    window.location.href = "{% url 'view_second_sem_allotments' %}";
+                }, 2000);
+            } else {
+                alert("{{ message }}");
+                {% if 'warning' in message.tags %}
+                    window.location.href = "{% url 'view_second_sem_allotments' %}";
+                {% endif %}
+            }
+        {% endfor %}
+    {% endif %}
+
+    // Enable tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

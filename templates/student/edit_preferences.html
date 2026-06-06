@@ -1,0 +1,174 @@
+{% extends 'student_base.html' %}
+
+{% load custom_filters %}
+
+{% block title %}Edit Preferences{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-0.1 ">
+    <h1 class="mb-0"></h1>
+
+    <!-- Current Page & Home Link -->
+    <div>
+        <span class="me-1 text-muted"> Edit preferences | </span>
+        <a href="{% url 'student_dashboard' %}" >
+            <i class="fas fa-home"></i> Home
+        </a>
+    </div>
+</div>
+
+<div class="container-fluid p-3">
+    
+    <div class="card shadow-sm border-0 rounded-3 p-3">
+        
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- DSC 1 -->
+            <div class="p-3 mb-3 rounded" style="background-color: #d1e7dd;">
+                <h4 class="text-center">
+                    Select Paper 1 (Major - DSC {{ student.current_sem|add:"-1"|multiply:"3"|add:"1" }})
+                </h3>
+                <div class="option-box">
+                    <label for="{{ form.dsc_1.id_for_label }}">Option 1</label>
+                    {{ form.dsc_1 }}
+                </div>
+                {% if form.dsc_1.errors %}
+                <div class="text-danger small">{{ form.dsc_1.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <!-- DSC 2 -->
+            <div class="p-3 mb-3 rounded text-center" style="background-color: #cfe2ff;">
+                <h4>Select Paper 2 (Minor - DSC {{ student.current_sem|add:"-1"|multiply:"3"|add:"2" }})</h3>
+                <div class="options-container">
+                    {% for field in form %}
+                    {% if "dsc_2_option" in field.name %}
+                    <div class="option-box">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- DSC 3 -->
+            <div class="p-3 mb-3 rounded text-center" style="background-color: #f8d7da;">
+                <h4>
+                    {% if student.pathway.name == "Double Major" %}
+                        Select Paper 3 (Second Major - DSC {{ student.current_sem|add:"-1"|multiply:"3"|add:"3" }})
+                    {% else %}
+                        Select Paper 3 (Minor - DSC {{ student.current_sem|add:"-1"|multiply:"3"|add:"3" }})
+                    {% endif %}
+                </h4>
+                <div class="options-container">
+                    {% for field in form %}
+                    {% if "dsc_3_option" in field.name %}
+                    <div class="option-box">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- MDC -->
+            <div class="p-3 mb-3 rounded text-center" style="background-color: #fff3cd;">
+                <h4>Select Paper 4 (MDC)</h3>
+                <div class="options-container">
+                    {% for field in form %}
+                    {% if "mdc_option" in field.name %}
+                    <div class="option-box">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}
+                        <div class="text-danger small">{{ field.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success">Update Preferences</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Disable duplicate selections -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const selects = document.querySelectorAll("select");
+
+        function updateDropdowns() {
+            let selectedValues = new Set();
+
+            selects.forEach(select => {
+                if (select.value) {
+                    selectedValues.add(select.value);
+                }
+            });
+
+            selects.forEach(select => {
+                let currentValue = select.value;
+                Array.from(select.options).forEach(option => {
+                    if (option.value && option.value !== currentValue) {
+                        option.disabled = selectedValues.has(option.value);
+                    }
+                });
+            });
+        }
+
+        selects.forEach(select => {
+            select.addEventListener("change", updateDropdowns);
+        });
+
+        updateDropdowns();
+    });
+</script>
+
+<style>
+    select {
+        width: 100%;
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #ced4da;
+        background-color: white;
+    }
+
+    .option-box {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 10px;
+    }
+
+    .option-box label {
+        font-weight: bold;
+        min-width: 120px;
+        text-align: right;
+    }
+
+    @media (max-width: 768px) {
+        .option-box {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .option-box label {
+            text-align: left;
+        }
+    }
+</style>
+{% endblock %}

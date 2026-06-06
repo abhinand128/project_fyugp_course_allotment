@@ -1,0 +1,82 @@
+{% extends 'admin_base.html' %}
+
+{% block content %}
+<div class="container-fluid p-4">
+    <h2 class="mb-4">Confirm Course Swap</h2>
+    
+    <form method="post" action="{% url 'execute_swap' %}">
+        {% csrf_token %}
+        <input type="hidden" name="student1_id" value="{{ student1.id }}">
+        <input type="hidden" name="student2_id" value="{{ student2.id }}">
+        
+        <div class="row">
+            <!-- Student 1 -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5>{{ student1.name }} ({{ student1.admission_number }})</h5>
+                        <div class="small">
+                            {{ student1.department }} | {{ student1.pathway }} | Sem {{ student1.current_sem }}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6>Current Courses:</h6>
+                        {% for course in student1_courses %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" 
+                                   name="course1_id" id="course1-{{ course.id }}" 
+                                   value="{{ course.id }}" required>
+                            <label class="form-check-label" for="course1-{{ course.id }}">
+                                <strong>{{ course.batch.course.course_code }}</strong> - 
+                                {{ course.batch.course.course_name }}
+                                <div class="small text-muted">
+                                    Paper {{ course.paper_no }} | {{ course.batch.course.course_type }}
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Student 2 -->
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5>{{ student2.name }} ({{ student2.admission_number }})</h5>
+                        <div class="small">
+                            {{ student2.department }} | {{ student2.pathway }} | Sem {{ student2.current_sem }}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6>Current Courses:</h6>
+                        {% for course in student2_courses %}
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" 
+                                   name="course2_id" id="course2-{{ course.id }}" 
+                                   value="{{ course.id }}" required>
+                            <label class="form-check-label" for="course2-{{ course.id }}">
+                                <strong>{{ course.batch.course.course_code }}</strong> - 
+                                {{ course.batch.course.course_name }}
+                                <div class="small text-muted">
+                                    Paper {{ course.paper_no }} | {{ course.batch.course.course_type }}
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-exchange-alt me-2"></i> Confirm Swap
+            </button>
+            <a href="{% url 'admin_course_swap' %}" class="btn btn-outline-secondary ms-2">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

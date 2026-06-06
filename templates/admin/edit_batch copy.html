@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Batch{% endblock %}
+
+{% block content %}
+    <h1 class="text-center">Edit Batch Status</h1>
+
+    <table class="table table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Course</th>
+                <th>Year</th>
+                <th>Part</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ course.course_name }}</td>
+                <td>{{ batch.year }}</td>
+                <td>{{ batch.get_part_display }}</td>  <!-- Displays 'Part 1' or 'Part 2' -->
+                <td>
+                    {% if batch.status %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                    {% endif %}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <form method="post" class="mt-3">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_status">Batch Status</label>
+            <select name="status" class="form-control">
+                <option value="True" {% if batch.status %}selected{% endif %}>Active</option>
+                <option value="False" {% if not batch.status %}selected{% endif %}>Inactive</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-warning">Update Status</button>
+    </form>
+{% endblock %}
