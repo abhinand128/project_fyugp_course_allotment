@@ -1,97 +1,218 @@
-# FYUGP Course Allotment System
+<div align="center">
 
-A robust Django-based web application designed to manage the Four-Year Undergraduate Programme (FYUGP) course allotment process. The system handles multiple student cohorts, complex pathway rules, and automated course allocation based on merit and category quotas.
+<br/>
 
-## 🚀 Key Features
+```
+███████╗██╗   ██╗██╗   ██╗ ██████╗ ██████╗
+██╔════╝╚██╗ ██╔╝██║   ██║██╔════╝ ██╔══██╗
+█████╗   ╚████╔╝ ██║   ██║██║  ███╗██████╔╝
+██╔══╝    ╚██╔╝  ██║   ██║██║   ██║██╔═══╝
+██║        ██║   ╚██████╔╝╚██████╔╝██║
+╚═╝        ╚═╝    ╚═════╝  ╚═════╝ ╚═╝
+```
 
-### 👨‍🎓 For Students
-*   **Cohort-Aware Selection:** Students only see courses available for their specific admission year and semester.
-*   **Dynamic Preference Setting:** Interface to select Major, Minor, MDC, and VAC courses based on FYUGP regulations.
-*   **Real-time Availability:** Only active batches (courses) are displayed.
-*   **Profile Management:** View academic records and allotment history.
+### **Course Allotment Engine** · Four-Year Undergraduate Programme
 
-### 🛡️ For Administrators
-*   **Merit-Based Allotment:** Automated algorithm that ranks students by Normalized Marks (Sem 1/2) or Semester Marks (Sem 3+).
-*   **Quota Management:** configurable seat percentages for General, SC/ST, EWS, and other categories.
-*   **Multi-Cohort Support:** Run allotments for 2025 and 2026 batches simultaneously without data interference.
-*   **Detailed Analytics:** View submission statistics and download reports in CSV format.
+<br/>
 
----
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![Django](https://img.shields.io/badge/Django-5.2.4-092E20?style=flat-square&logo=django&logoColor=white)](https://djangoproject.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Ready-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![License](https://img.shields.io/badge/License-MIT-22C55E?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-F59E0B?style=flat-square)]()
 
-## 📸 Screenshots
+<br/>
 
-### 1. Student Dashboard
-*A clean interface providing access to course selection, results, and profile.*
-![Student Dashboard](static/images/readme/student_dashboard.png)
+> *Eliminating the paper-preference nightmare — one deterministic allocation at a time.*
 
-### 2. Course Selection (Semester 3)
-*Dynamic form showing the 6-paper selection logic (Majors, Minors, MDC, and VAC).*
-![Course Selection](static/images/readme/course_selection.png)
+<br/>
 
-### 3. Admin Allotment Management
-*The control center for triggering automated allocations for different semesters.*
-![Admin Allotment](static/images/readme/admin_allotment.png)
-
-### 4. Allotment Statistics
-*Visual breakdown of submission progress by department.*
-![Allotment Stats](static/images/readme/allotment_stats.png)
+</div>
 
 ---
 
-## 🛠️ System Workflow
+## The Problem It Solves
 
-### 1. Database Architecture
-The system uses three primary tables to manage the lifecycle of an allotment:
-*   **`CoursePreference`**: Temporary storage for student choices.
-*   **`CourseAllotment`**: Permanent storage for finalized results.
-*   **`Batch`**: Tracks seat limits and real-time availability (`seats_taken`).
-
-### 2. The Allotment Algorithm (Admin)
-When the Admin triggers an allotment, the system executes these steps:
-1.  **Scope Check:** Identifies the target cohort (Admission Year) based on the current academic cycle.
-2.  **Student Ranking:** 
-    *   **Sem 1 & 2:** Sorted by `normalized_marks`.
-    *   **Sem 3:** Sorted by `first_sem_marks`.
-3.  **Core Allocation:** Assigns Major papers (Paper 1 & 2) directly within the student's department.
-4.  **Preference Processing:** Iterates through student choices for Minors, MDC, and VAC.
-5.  **Quota Enforcement:** For MDC/VAC, the system fills seats based on General, SC/ST, and Special quotas before performing a "Second Pass" for unallotted students.
+Every semester, thousands of students compete for limited course seats. Manual allocation means hours of spreadsheet work, inconsistent quota enforcement, and zero transparency. FYUGP Course Allotment Engine replaces that chaos with a **merit-driven, quota-compliant allocation pipeline** that runs in seconds.
 
 ---
 
-## 💻 Installation & Setup
+## ✦ Core Capabilities
 
-1. **Clone the repository:**
-   ```bash
-   git clone git@github.com:abhinand128/project_fyugp_course_allotment.git
-   cd project_fyugp_course_allotment
-   ```
+<table>
+<tr>
+<td width="50%">
 
-2. **Install Dependencies:**
-   ```bash
-   pip install django
-   ```
+**🔁 Recursive Merit Algorithm**
+Multi-pass allocation with tie-breaker logic and secondary MDC/VAC pass-throughs. No student falls through the cracks.
 
-3. **Database Setup:**
-   ```bash
-   python manage.py migrate
-   python manage.py loaddata courses.json  # If initial data is available
-   ```
+</td>
+<td width="50%">
 
-4. **Run Server:**
-   ```bash
-   python manage.py runserver
-   ```
+**🛡️ Atomic State Management**
+Every bulk allocation runs inside `@transaction.atomic` — either everything commits, or nothing does. Zero partial states.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**📦 Cohort Isolation**
+Engineered data structures that allow future admission batches to run independently without cross-contamination.
+
+</td>
+<td width="50%">
+
+**⚖️ Quota Balancing Engine**
+General, SC/ST, and Special Category seats distributed via a weighted percentage model — automatically, every run.
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**📊 Dynamic UI/UX**
+Form-driven interface that adapts its rules based on the student's active semester. Context-aware at every step.
+
+</td>
+<td width="50%">
+
+**📥 High-Performance Exports**
+Tablib + Django-Import-Export handles bulk student uploads and allotment downloads in seconds, not hours.
+
+</td>
+</tr>
+</table>
 
 ---
 
-## 📁 File Structure
-*   `allotmentapp/views.py`: Contains the core allotment logic and paper allocation functions.
-*   `allotmentapp/forms.py`: Handles dynamic form generation for different semesters.
-*   `allotmentapp/models.py`: Database schema for Students, Batches, and Allotments.
-*   `templates/`: HTML templates for Admin and Student interfaces.
-*   `SYSTEM_WORKFLOW.txt`: Detailed technical breakdown of the backend logic.
+## 🖼️ Screenshots
+
+**🔐 Secure Login** — Role-based redirection for students & admins
+
+![Login Screen](screenshots/login.png)
 
 ---
 
-## ⚖️ License
-This project is developed for academic administration purposes.
+**👨‍🎓 Student Dashboard** — Course selection, results & academic tracking
+
+![Student Dashboard](screenshots/std_dash.png)
+
+---
+
+**🛡️ Admin Control Panel** — Trigger allotments & monitor submissions live
+
+![Admin Dashboard](screenshots/adm_dash.png)
+
+---
+
+## 🗄️ Data Model
+
+```mermaid
+erDiagram
+    STUDENT ||--o{ COURSEPREFERENCE : submits
+    STUDENT ||--o{ COURSEALLOTMENT : receives
+    BATCH ||--o{ COURSEPREFERENCE : groups
+    BATCH ||--o{ COURSEALLOTMENT : governs
+    BATCH ||--o{ COURSE : contains
+
+    STUDENT {
+        int id PK
+        string name
+        float merit_score
+        string category
+    }
+    BATCH {
+        int id PK
+        int admission_year
+        int semester
+    }
+    COURSE {
+        int id PK
+        string code
+        string type
+        int total_seats
+    }
+    COURSEPREFERENCE {
+        int priority
+        int student_id FK
+        int course_id FK
+        int batch_id FK
+    }
+    COURSEALLOTMENT {
+        int student_id FK
+        int course_id FK
+        int batch_id FK
+        datetime allotted_at
+    }
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Backend** | Python 3.10+, Django 5.2.4 (MTV Architecture) |
+| **Frontend** | HTML5, CSS3, JavaScript, Bootstrap 5, Font Awesome |
+| **Database** | SQLite (development) · PostgreSQL (production) |
+| **Data I/O** | Tablib, Django-Import-Export |
+| **Dev Tools** | Django-Extensions, SQLParse, ASGIref |
+
+---
+
+## 🚀 Getting Started
+
+```bash
+# 1. Clone
+git clone git@github.com:abhinand128/project_fyugp_course_allotment.git
+cd project_fyugp_course_allotment
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Initialize database
+python manage.py migrate
+
+# 4. Seed course data
+python manage.py loaddata courses.json
+
+# 5. Run
+python manage.py runserver
+```
+
+> Open `http://127.0.0.1:8000` — default admin credentials are in `SETUP.md`.
+
+
+
+## 🤝 Contributing
+
+Pull requests are welcome. For major changes, open an issue first to discuss what you'd like to change.
+
+1. Fork the repo
+2. Create your branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add your feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
+
+---
+
+<div align="center">
+
+<br/>
+
+**Built with precision by [Abhinand](https://github.com/abhinand128)**
+
+*Full-Stack Developer · Python Systems · Clean Architecture*
+
+<br/>
+
+[![GitHub](https://img.shields.io/badge/GitHub-abhinand128-181717?style=flat-square&logo=github)](https://github.com/abhinand128)
+
+<br/>
+
+*Maintained with a focus on clean code, architectural integrity, and scalable system design.*
+
+<br/>
+
+</div>
