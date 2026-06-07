@@ -106,46 +106,6 @@ Tablib + Django-Import-Export handles bulk student uploads and allotment downloa
 
 ---
 
-## 🗄️ Data Model
-
-```mermaid
-erDiagram
-    STUDENT ||--o{ COURSEPREFERENCE : submits
-    STUDENT ||--o{ COURSEALLOTMENT : receives
-    BATCH ||--o{ COURSEPREFERENCE : groups
-    BATCH ||--o{ COURSEALLOTMENT : governs
-    BATCH ||--o{ COURSE : contains
-
-    STUDENT {
-        int id PK
-        string name
-        float merit_score
-        string category
-    }
-    BATCH {
-        int id PK
-        int admission_year
-        int semester
-    }
-    COURSE {
-        int id PK
-        string code
-        string type
-        int total_seats
-    }
-    COURSEPREFERENCE {
-        int priority
-        int student_id FK
-        int course_id FK
-        int batch_id FK
-    }
-    COURSEALLOTMENT {
-        int student_id FK
-        int course_id FK
-        int batch_id FK
-        datetime allotted_at
-    }
-```
 
 ---
 
